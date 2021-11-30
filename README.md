@@ -1,2 +1,2 @@
 # gogp2
-Goleng gPhoto2
+Golang gPhoto2
