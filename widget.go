@@ -45,6 +45,7 @@ func (c *Camera) GetConfig() (*[]string, error) {
 	rootWidget, err := c.getRootWidget()
 	if err != nil {
 		Log.Error(err.Error())
+		return nil, err
 	}
 
 	var arrayWidget []string
