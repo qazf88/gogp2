@@ -167,6 +167,7 @@ func (c *Camera) getChoice2(widget *C.CameraWidget) ([]string, error) {
 }
 
 func (c *Camera) getChoice(widget *C.CameraWidget) ([]string, error) {
+
 	choicesList := []string{}
 	numChoices := C.gp_widget_count_choices(widget)
 
