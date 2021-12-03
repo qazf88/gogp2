@@ -14,41 +14,6 @@ type Camera struct {
 	Context      *C.GPContext
 	Info         []string
 	CameraStatus bool
-<<<<<<< HEAD
-	//Config  Widget
-	//Config2 CameraWidget
-}
-
-type configWindow struct {
-	section []configSection
-}
-
-type configSection struct {
-	widget []Widget
-}
-
-type Widget struct {
-	Label      string   `json:"label"`
-	Name       string   `json:"name"`
-	Info       string   `json:"info"`
-	Value      string   `json:"value"`
-	Choise     []string `json:"choise"`
-	ReadOnly   bool     `json:"readOnly"`
-	widgetType WidgetType
-}
-
-// type baseWidget struct {
-// 	label      string
-// 	info       string
-// 	name       string
-// 	value      string
-// 	choise     []string
-// 	readOnly   bool
-// 	widgetType WidgetType
-// 	//children   []baseWidget
-// }
-
-=======
 	Config       []string
 }
 
@@ -62,24 +27,12 @@ type Widget struct {
 	Type     WidgetType `json:"type"`
 }
 
->>>>>>> staging
 const (
 	OK = 0
 )
 
 //widget types
 const (
-<<<<<<< HEAD
-	gpWidgetWindow = iota //(0)
-	gpWidgetSection
-	gpWidgetText
-	gpWidgetRange
-	gpWidgetToggle
-	gpWidgetRadio
-	gpWidgetMenu
-	gpWidgetButton
-	gpWidgetDate
-=======
 	typeWidgetWindow = iota //(0)
 	typeWidgetSection
 	typeWidgetText
@@ -89,7 +42,6 @@ const (
 	typeWidgetMenu
 	typeWidgetButton
 	typeWidgetDate
->>>>>>> staging
 )
 
 //widget types
@@ -113,7 +65,6 @@ const (
 	//WidgetDate : Date entering widget (int)
 	WidgetDate WidgetType = "date"
 )
-
 
 func widgetType(_WidgetType C.CameraWidgetType) WidgetType {
 	switch int(_WidgetType) {
