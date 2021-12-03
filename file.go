@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"unsafe"
 
-	Log "github.com/qazf88/GoLog"
+	Log "github.com/qazf88/golog"
 )
 
 func newFile() (*C.CameraFile, error) {

@@ -14,6 +14,7 @@ type Camera struct {
 	Context      *C.GPContext
 	Info         []string
 	CameraStatus bool
+<<<<<<< HEAD
 	//Config  Widget
 	//Config2 CameraWidget
 }
@@ -47,12 +48,28 @@ type Widget struct {
 // 	//children   []baseWidget
 // }
 
+=======
+	Config       []string
+}
+
+type Widget struct {
+	Label    string     `json:"label"`
+	Name     string     `json:"name"`
+	Info     string     `json:"info"`
+	Value    string     `json:"value"`
+	Choice   []string   `json:"choise"`
+	ReadOnly bool       `json:"readOnly"`
+	Type     WidgetType `json:"type"`
+}
+
+>>>>>>> staging
 const (
 	OK = 0
 )
 
 //widget types
 const (
+<<<<<<< HEAD
 	gpWidgetWindow = iota //(0)
 	gpWidgetSection
 	gpWidgetText
@@ -62,6 +79,17 @@ const (
 	gpWidgetMenu
 	gpWidgetButton
 	gpWidgetDate
+=======
+	typeWidgetWindow = iota //(0)
+	typeWidgetSection
+	typeWidgetText
+	typeWidgetRange
+	typeWidgetToggle
+	typeWidgetRadio
+	typeWidgetMenu
+	typeWidgetButton
+	typeWidgetDate
+>>>>>>> staging
 )
 
 //widget types
@@ -86,25 +114,26 @@ const (
 	WidgetDate WidgetType = "date"
 )
 
-func widgetType(gpWidgetType C.CameraWidgetType) WidgetType {
-	switch int(gpWidgetType) {
-	case gpWidgetButton:
+
+func widgetType(_WidgetType C.CameraWidgetType) WidgetType {
+	switch int(_WidgetType) {
+	case typeWidgetButton:
 		return WidgetButton
-	case gpWidgetDate:
+	case typeWidgetDate:
 		return WidgetDate
-	case gpWidgetMenu:
+	case typeWidgetMenu:
 		return WidgetMenu
-	case gpWidgetRadio:
+	case typeWidgetRadio:
 		return WidgetRadio
-	case gpWidgetRange:
+	case typeWidgetRange:
 		return WidgetRange
-	case gpWidgetSection:
+	case typeWidgetSection:
 		return WidgetSection
-	case gpWidgetText:
+	case typeWidgetText:
 		return WidgetText
-	case gpWidgetToggle:
+	case typeWidgetToggle:
 		return WidgetToggle
-	case gpWidgetWindow:
+	case typeWidgetWindow:
 		return WidgetWindow
 	}
 	panic("should not be here")
