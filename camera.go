@@ -6,6 +6,7 @@ package gogp2
 import "C"
 import (
 	"fmt"
+	"io"
 	"strconv"
 	"unsafe"
 
@@ -119,4 +120,36 @@ func (c *Camera) FreeCamera() error {
 	}
 	c.CameraStatus = false
 	return nil
+}
+
+//CapturePreview  captures image preview and saves it in provided buffer
+func (c *Camera) CapturePreview(buffer io.Writer) error {
+	Log.Trace("capture preview")
+	// if camera.Camera == nil {
+	// 	camera.CameraStatus = false
+	// 	err := fmt.Errorf("cannot capture photo camera not initialize")
+	// 	l.Log(l.ERR, err)
+	// 	return err
+	// }
+	gpFile, err := newFile()
+	if err != nil {
+		Log.Error(err.Error())
+		return err
+	}
+
+	if res := C.gp_camera_capture_preview(c.Camera, gpFile, c.Context); res != OK {
+		err := "cannot capture preview, error code: " + strconv.Itoa(int(res))
+		Log.Error(err)
+		if gpFile != nil {
+			C.gp_file_unref(gpFile)
+		}
+		return fmt.Errorf(err)
+	}
+
+	res := getFileBytes(gpFile, buffer)
+
+	if gpFile != nil {
+		C.gp_file_unref(gpFile)
+	}
+	return res
 }
