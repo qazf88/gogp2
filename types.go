@@ -27,6 +27,15 @@ type Widget struct {
 	Type     WidgetType `json:"type"`
 }
 
+type CameraFilePath struct {
+	Name     string
+	Folder   string
+	Isdir    bool
+	Children []CameraFilePath
+
+	camera *Camera
+}
+
 const (
 	OK = 0
 )
@@ -89,3 +98,19 @@ func widgetType(_WidgetType C.CameraWidgetType) WidgetType {
 	}
 	panic("should not be here")
 }
+
+//File types
+const (
+	//FileTypePreview is a preview of an image
+	FileTypePreview = iota
+	//FileTypeNormal is regular normal data of a file
+	FileTypeNormal
+	//FileTypeRaw usually the same as FileTypeNormal for modern cameras ( left for compatibility purposes)
+	FileTypeRaw
+	//FileTypeAudio is a audio view of a file. Perhaps an embedded comment or similar
+	FileTypeAudio
+	//FileTypeExif is the  embedded EXIF data of an image
+	FileTypeExif
+	//FileTypeMetadata is the metadata of a file, like Metadata of files on MTP devices
+	FileTypeMetadata
+)

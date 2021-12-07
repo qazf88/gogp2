@@ -3,8 +3,10 @@ package gogp2
 // #cgo linux pkg-config: libgphoto2
 // #include <gphoto2/gphoto2.h>
 // #include <string.h>
+// #include <stdlib.h>
 import "C"
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strconv"
@@ -125,12 +127,6 @@ func (c *Camera) FreeCamera() error {
 //CapturePreview  captures image preview and saves it in provided buffer
 func (c *Camera) CapturePreview(buffer io.Writer) error {
 	Log.Trace("capture preview")
-	// if camera.Camera == nil {
-	// 	camera.CameraStatus = false
-	// 	err := fmt.Errorf("cannot capture photo camera not initialize")
-	// 	l.Log(l.ERR, err)
-	// 	return err
-	// }
 	gpFile, err := newFile()
 	if err != nil {
 		Log.Error(err.Error())
@@ -152,4 +148,65 @@ func (c *Camera) CapturePreview(buffer io.Writer) error {
 		C.gp_file_unref(gpFile)
 	}
 	return res
+}
+
+//Capture photo
+func (c *Camera) CapturePhoto(buffer *bytes.Buffer) error {
+	Log.Trace("capture photo")
+	type cameraFilePathInternal struct {
+		Name   [128]uint8
+		Folder [1024]uint8
+	}
+	photoPath := cameraFilePathInternal{}
+	res := C.gp_camera_capture(c.Camera, 0, (*C.CameraFilePath)(unsafe.Pointer(&photoPath)), c.Context)
+	if res != OK {
+		err := "cannot capture photo, error code: " + strconv.Itoa(int(res))
+		Log.Error(err)
+		return fmt.Errorf(err)
+	}
+	buff := io.Writer(buffer)
+	filePath := &CameraFilePath{
+		Name:     string(photoPath.Name[:bytes.IndexByte(photoPath.Name[:], 0)]),
+		Folder:   string(photoPath.Folder[:bytes.IndexByte(photoPath.Folder[:], 0)]),
+		Isdir:    false,
+		Children: nil,
+		camera:   c,
+	}
+	err := filePath.DownloadImage(buff, true)
+	if err != nil {
+		Log.Error(err.Error())
+	}
+	return nil
+}
+
+// Download image from camera.
+func (file *CameraFilePath) DownloadImage(buffer io.Writer, leaveOnCamera bool) error {
+	Log.Trace("download image")
+	_file, err := newFile()
+	if err != nil {
+		Log.Error(err.Error())
+		return err
+	}
+	defer C.gp_file_free(_file)
+
+	fileDir := C.CString(file.Folder)
+	defer C.free(unsafe.Pointer(fileDir))
+
+	fileName := C.CString(file.Name)
+	defer C.free(unsafe.Pointer(fileName))
+
+	res := C.gp_camera_file_get(file.camera.Camera, fileDir, fileName, FileTypeNormal, _file, file.camera.Context)
+	if res != OK {
+		_err := "cannot download photo file, error code: " + strconv.Itoa(int(res))
+		Log.Error(_err)
+		return fmt.Errorf(_err)
+	}
+
+	err = getFileBytes(_file, buffer)
+	if err != nil && !leaveOnCamera {
+		C.gp_camera_file_delete(file.camera.Camera, fileDir, fileName, file.camera.Context)
+		Log.Error(err.Error())
+		return err
+	}
+	return nil
 }
