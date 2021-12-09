@@ -72,6 +72,7 @@ func (c *Camera) initCamera() error {
 	}
 	res := C.gp_camera_init(c.Camera, c.Context)
 	if res != OK {
+		c.FreeContext()
 		err := "error camera initializing: " + strconv.Itoa(int(res))
 		Log.Error(err)
 		_err := c.FreeCamera()
@@ -92,6 +93,11 @@ func (c *Camera) exitCamera() error {
 		err := "error exit camera: " + strconv.Itoa(int(res))
 		Log.Error(err)
 		return fmt.Errorf(err)
+	}
+	err := c.FreeContext()
+	if err != nil {
+		Log.Error(err.Error())
+		return err
 	}
 	c.Camera = nil
 	return nil
