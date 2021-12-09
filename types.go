@@ -5,7 +5,7 @@ package gogp2
 // #include <string.h>
 import "C"
 
-type GoContext C.context
+type GoContext C.GPContext
 type GoCamera C.Camera
 type WidgetType string
 
