@@ -37,7 +37,11 @@ type CameraFilePath struct {
 }
 
 const (
-	OK = 0
+	OK                     = 0
+	ERROR_NOT_SUPPORTED    = -6
+	ERROR_NO_MEMORY        = -3
+	ERROR_IO               = -7
+	ERROR_IO_SUPPORTED_USB = -21
 )
 
 //widget types

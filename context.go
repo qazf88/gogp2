@@ -36,6 +36,7 @@ func (c *Camera) FreeContext() error {
 		Log.Trace("free context")
 		return nil
 	}
+	c.Context = nil
 	err := "can not free context is empty"
 	Log.Error(err)
 	return fmt.Errorf(err)

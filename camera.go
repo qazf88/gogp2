@@ -16,25 +16,32 @@ import (
 )
 
 //Init camera
-func (c *Camera) InitCamera() bool {
+func (c *Camera) Init() bool {
+	if c.Context == nil {
+		if c.NewContext() != nil {
+			c.CameraStatus = false
+			return false
+		}
+	}
+	if c.Camera == nil {
+		if c.NewCamera() != nil {
+			c.CameraStatus = false
+			return false
+		}
+	}
+	if !c.CameraStatus {
+		if c.InitCamera() != nil {
+			return false
+		}
+	}
 
-	c.CameraStatus = false
-	if c.NewContext() != nil {
-		return false
-	}
-	if c.newCamera() != nil {
-		return false
-	}
-	if c.initCamera() != nil {
-		return false
-	}
 	c.CameraStatus = true
 	Log.Info("New camera")
 	return true
 }
 
 //Get new camera
-func (c *Camera) newCamera() error {
+func (c *Camera) NewCamera() error {
 	Log.Trace("get new camera")
 	if c.Context == nil {
 		err := "could not get camera, context is empty"
@@ -63,7 +70,7 @@ func (c *Camera) newCamera() error {
 }
 
 //init camera
-func (c *Camera) initCamera() error {
+func (c *Camera) InitCamera() error {
 	Log.Trace("initializing camera")
 	if c.Camera == nil {
 		err := "could not initialize camera without pointer"
@@ -72,21 +79,17 @@ func (c *Camera) initCamera() error {
 	}
 	res := C.gp_camera_init(c.Camera, c.Context)
 	if res != OK {
-		c.FreeContext()
 		err := "error camera initializing: " + strconv.Itoa(int(res))
 		Log.Error(err)
-		_err := c.FreeCamera()
-		if _err != nil {
-			Log.Error(_err.Error())
-			return _err
-		}
 		return fmt.Errorf(err)
 	}
+	c.CameraStatus = true
 	return nil
 }
 
 //exit camera
-func (c *Camera) exitCamera() error {
+func (c *Camera) ExitCamera() error {
+	c.CameraStatus = false
 	Log.Trace("exit camera")
 	res := C.gp_camera_exit(c.Camera, c.Context)
 	if res != OK {
@@ -94,17 +97,12 @@ func (c *Camera) exitCamera() error {
 		Log.Error(err)
 		return fmt.Errorf(err)
 	}
-	err := c.FreeContext()
-	if err != nil {
-		Log.Error(err.Error())
-		return err
-	}
-	c.Camera = nil
+	// c.Camera = nil
 	return nil
 }
 
 //unref camera
-func (c *Camera) unrefCamera() error {
+func (c *Camera) UnrefCamera() error {
 	Log.Trace("unref camera")
 	res := C.gp_camera_unref(c.Camera)
 	if res != OK {
@@ -112,21 +110,7 @@ func (c *Camera) unrefCamera() error {
 		Log.Error(err)
 		return fmt.Errorf(err)
 	}
-	return nil
-}
-
-//Free camera
-func (c *Camera) FreeCamera() error {
-	Log.Trace("free camera")
-	err := c.exitCamera()
-	if err != nil {
-		return err
-	}
-	err = c.unrefCamera()
-	if err != nil {
-		return err
-	}
-	c.CameraStatus = false
+	c.Camera = nil
 	return nil
 }
 
@@ -140,6 +124,9 @@ func (c *Camera) CapturePreview(buffer io.Writer) error {
 	}
 
 	if res := C.gp_camera_capture_preview(c.Camera, gpFile, c.Context); res != OK {
+		var yy *C.char
+		yy = C.gp_port_result_as_string(res)
+		fmt.Println(C.GoString(yy))
 		err := "cannot capture preview, error code: " + strconv.Itoa(int(res))
 		Log.Error(err)
 		if gpFile != nil {
