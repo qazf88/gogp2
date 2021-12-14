@@ -124,9 +124,6 @@ func (c *Camera) CapturePreview(buffer io.Writer) error {
 	}
 
 	if res := C.gp_camera_capture_preview(c.Camera, gpFile, c.Context); res != OK {
-		var yy *C.char
-		yy = C.gp_port_result_as_string(res)
-		fmt.Println(C.GoString(yy))
 		err := "cannot capture preview, error code: " + strconv.Itoa(int(res))
 		Log.Error(err)
 		if gpFile != nil {

@@ -37,11 +37,7 @@ type CameraFilePath struct {
 }
 
 const (
-	OK                     = 0
-	ERROR_NOT_SUPPORTED    = -6
-	ERROR_NO_MEMORY        = -3
-	ERROR_IO               = -7
-	ERROR_IO_SUPPORTED_USB = -21
+	OK = 0
 )
 
 //widget types
@@ -118,3 +114,8 @@ const (
 	//FileTypeMetadata is the metadata of a file, like Metadata of files on MTP devices
 	FileTypeMetadata
 )
+
+func StringGpError(num int) string {
+	stringError := C.gp_port_result_as_string(C.int(num))
+	return C.GoString(stringError)
+}
