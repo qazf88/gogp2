@@ -152,7 +152,7 @@ func (c *CameraStruct) CapturePhoto(buffer *bytes.Buffer) error {
 
 	photoPath := cameraFilePathInternal{}
 	res := C.gp_camera_capture(c.Camera, 0, (*C.CameraFilePath)(unsafe.Pointer(&photoPath)), c.Context)
-	defer c.ExitCamera()
+	//defer c.ExitCamera()
 	if res != OK {
 		err := "cannot capture photo, error code: " + strconv.Itoa(int(res))
 		Log.Error(err)
