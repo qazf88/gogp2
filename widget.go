@@ -15,31 +15,33 @@ import (
 	Log "github.com/qazf88/golog"
 )
 
-func (c *Camera) getRootWidget() (*C.CameraWidget, error) {
+func (c *CameraStruct) getRootWidget() (*C.CameraWidget, error) {
 	var rootWidget *C.CameraWidget
 	defer C.free(unsafe.Pointer(rootWidget))
-	if retval := C.gp_camera_get_config(c.Camera, (**C.CameraWidget)(unsafe.Pointer(&rootWidget)), c.Context); retval != OK {
-		return nil, fmt.Errorf("error initialize camera config :%v", retval)
+	res := C.gp_camera_get_config(c.Camera, (**C.CameraWidget)(unsafe.Pointer(&rootWidget)), c.Context)
+	if res != OK {
+		return nil, fmt.Errorf("error initialize camera config :%v", res)
 	}
 	return rootWidget, nil
 }
 
-func (c *Camera) getChildWidget() (*C.CameraWidget, error) {
+func (c *CameraStruct) getChildWidget() (*C.CameraWidget, error) {
 	var rootWidget *C.CameraWidget
 
-	if retval := C.gp_camera_get_config(c.Camera, (**C.CameraWidget)(unsafe.Pointer(&rootWidget)), c.Context); retval != OK {
-		return nil, fmt.Errorf("error initialize camera config :%v", retval)
+	res := C.gp_camera_get_config(c.Camera, (**C.CameraWidget)(unsafe.Pointer(&rootWidget)), c.Context)
+	if res != OK {
+		return nil, fmt.Errorf("error initialize camera config :%v", res)
 	}
 	return rootWidget, nil
 }
 
-func (camera *Camera) freeChildWidget(input *C.CameraWidget) {
+func (camera *CameraStruct) freeChildWidget(input *C.CameraWidget) {
 	var rootWidget *C.CameraWidget
 	C.gp_widget_get_root(input, (**C.CameraWidget)(unsafe.Pointer(&rootWidget)))
 	C.free(unsafe.Pointer(rootWidget))
 }
 
-func (c *Camera) GetConfig() (*[]string, error) {
+func (c *CameraStruct) GetConfig() (*[]string, error) {
 	Log.Trace("get config camera")
 	var rootWidget *C.CameraWidget
 
@@ -79,7 +81,8 @@ func (c *Camera) GetConfig() (*[]string, error) {
 	return &arrayWidget, nil
 }
 
-func (c *Camera) getWidget(widget *C.CameraWidget) (Widget, error) {
+// Get camera widget
+func (c *CameraStruct) getWidget(widget *C.CameraWidget) (Widget, error) {
 
 	var _info *C.char
 	var _label *C.char
@@ -152,7 +155,7 @@ func (c *Camera) getWidget(widget *C.CameraWidget) (Widget, error) {
 	return _cameraWidget, nil
 }
 
-func (c *Camera) getChoice2(widget *C.CameraWidget) ([]string, error) {
+func (c *CameraStruct) getChoice2(widget *C.CameraWidget) ([]string, error) {
 	choicesList := []string{}
 	numChoices := C.gp_widget_count_choices(widget)
 
@@ -167,7 +170,7 @@ func (c *Camera) getChoice2(widget *C.CameraWidget) ([]string, error) {
 	return choicesList, nil
 }
 
-func (c *Camera) getChoice(widget *C.CameraWidget) ([]string, error) {
+func (c *CameraStruct) getChoice(widget *C.CameraWidget) ([]string, error) {
 
 	choicesList := []string{}
 	numChoices := C.gp_widget_count_choices(widget)
@@ -184,7 +187,7 @@ func (c *Camera) getChoice(widget *C.CameraWidget) ([]string, error) {
 	return choicesList, nil
 }
 
-func (c *Camera) getValue(widget *C.CameraWidget, _type C.CameraWidgetType) (string, error) {
+func (c *CameraStruct) getValue(widget *C.CameraWidget, _type C.CameraWidgetType) (string, error) {
 	var value *C.char
 
 	res := C.gp_widget_get_value(widget, (unsafe.Pointer(&value)))

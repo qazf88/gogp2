@@ -5,11 +5,14 @@ package gogp2
 // #include <string.h>
 import "C"
 
-type GoContext C.GPContext
-type GoCamera C.Camera
+type GoContext *C.GPContext
+
+//type GoCamera C.Camera
 type WidgetType string
 
-type Camera struct {
+type Abilities *C.CameraAbilitiesList
+
+type CameraStruct struct {
 	Camera       *C.Camera
 	Context      *C.GPContext
 	Info         []string
@@ -27,14 +30,33 @@ type Widget struct {
 	Type     WidgetType `json:"type"`
 }
 
+type Lists struct {
+	CameraList      *C.CameraList
+	AbilitiesList   *C.CameraAbilitiesList
+	PortInfoList    *C.GPPortInfoList
+	CameraListCount int
+}
+
+// type Cameras []CameraStruct
+// type Camera CameraStruct
+
+type CamerasList struct {
+	Name   string `json:"name"`
+	Port   string `json:"port"`
+	Number int    `json:"number"`
+}
+
 type CameraFilePath struct {
 	Name     string
 	Folder   string
 	Isdir    bool
 	Children []CameraFilePath
-
-	camera *Camera
 }
+
+// var (
+// 	multiple bool = true
+// 	camera   Cameras
+// )
 
 const (
 	OK = 0

@@ -11,7 +11,7 @@ import (
 )
 
 //NewContext Initialize new context
-func (c *Camera) NewContext() error {
+func (c *CameraStruct) NewContext() error {
 	if c.Context != nil {
 		err := "context is already initialized"
 		Log.Error(err)
@@ -29,7 +29,7 @@ func (c *Camera) NewContext() error {
 }
 
 //FreeContext Free context
-func (c *Camera) FreeContext() error {
+func (c *CameraStruct) FreeContext() error {
 	if c.Context != nil {
 		C.gp_context_unref(c.Context)
 		c = nil

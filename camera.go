@@ -16,7 +16,7 @@ import (
 )
 
 //Init camera
-func (c *Camera) Init() bool {
+func (c *CameraStruct) Init() bool {
 	if c.Context == nil {
 		if c.NewContext() != nil {
 			c.CameraStatus = false
@@ -29,10 +29,20 @@ func (c *Camera) Init() bool {
 			return false
 		}
 	}
-	if !c.CameraStatus {
-		if c.InitCamera() != nil {
-			return false
-		}
+
+	// ress, err := c.GetConectedCamerasList()
+	// if err != nil {
+	// 	Log.Error(err.Error())
+	// 	return false
+	// }
+	// fmt.Println(ress)
+
+	// if !multiple {
+	// 	goto single
+	// }
+
+	if c.InitCamera() != nil {
+		return false
 	}
 
 	c.CameraStatus = true
@@ -41,7 +51,7 @@ func (c *Camera) Init() bool {
 }
 
 //Get new camera
-func (c *Camera) NewCamera() error {
+func (c *CameraStruct) NewCamera() error {
 	Log.Trace("get new camera")
 	if c.Context == nil {
 		err := "could not get camera, context is empty"
@@ -49,7 +59,7 @@ func (c *Camera) NewCamera() error {
 		return fmt.Errorf(err)
 	}
 	if c.Camera != nil {
-		err := "Camera is already initialized"
+		err := "camera is already initialized"
 		Log.Error(err)
 		return fmt.Errorf(err)
 	}
@@ -70,7 +80,7 @@ func (c *Camera) NewCamera() error {
 }
 
 //init camera
-func (c *Camera) InitCamera() error {
+func (c *CameraStruct) InitCamera() error {
 	Log.Trace("initializing camera")
 	if c.Camera == nil {
 		err := "could not initialize camera without pointer"
@@ -83,12 +93,17 @@ func (c *Camera) InitCamera() error {
 		Log.Error(err)
 		return fmt.Errorf(err)
 	}
+	res = C.gp_camera_exit(c.Camera, c.Context)
+	if res != OK {
+		fmt.Println(res)
+	}
+
 	c.CameraStatus = true
 	return nil
 }
 
 //exit camera
-func (c *Camera) ExitCamera() error {
+func (c *CameraStruct) ExitCamera() error {
 	c.CameraStatus = false
 	Log.Trace("exit camera")
 	res := C.gp_camera_exit(c.Camera, c.Context)
@@ -97,12 +112,11 @@ func (c *Camera) ExitCamera() error {
 		Log.Error(err)
 		return fmt.Errorf(err)
 	}
-	// c.Camera = nil
 	return nil
 }
 
 //unref camera
-func (c *Camera) UnrefCamera() error {
+func (c *CameraStruct) UnrefCamera() error {
 	Log.Trace("unref camera")
 	res := C.gp_camera_unref(c.Camera)
 	if res != OK {
@@ -115,7 +129,7 @@ func (c *Camera) UnrefCamera() error {
 }
 
 //CapturePreview  captures image preview and saves it in provided buffer
-func (c *Camera) CapturePreview(buffer io.Writer) error {
+func (c *CameraStruct) CapturePreview(buffer io.Writer) error {
 	Log.Trace("capture preview")
 	gpFile, err := newFile()
 	if err != nil {
@@ -141,12 +155,13 @@ func (c *Camera) CapturePreview(buffer io.Writer) error {
 }
 
 //Capture photo
-func (c *Camera) CapturePhoto(buffer *bytes.Buffer) error {
+func (c *CameraStruct) CapturePhoto(buffer *bytes.Buffer) error {
 	Log.Trace("capture photo")
 	type cameraFilePathInternal struct {
 		Name   [128]uint8
 		Folder [1024]uint8
 	}
+	defer c.ExitCamera()
 	photoPath := cameraFilePathInternal{}
 	res := C.gp_camera_capture(c.Camera, 0, (*C.CameraFilePath)(unsafe.Pointer(&photoPath)), c.Context)
 	if res != OK {
@@ -160,9 +175,8 @@ func (c *Camera) CapturePhoto(buffer *bytes.Buffer) error {
 		Folder:   string(photoPath.Folder[:bytes.IndexByte(photoPath.Folder[:], 0)]),
 		Isdir:    false,
 		Children: nil,
-		camera:   c,
 	}
-	err := filePath.DownloadImage(buff, true)
+	err := c.DownloadImage(buff, filePath, true)
 	if err != nil {
 		Log.Error(err.Error())
 	}
@@ -170,7 +184,7 @@ func (c *Camera) CapturePhoto(buffer *bytes.Buffer) error {
 }
 
 // Download image from camera.
-func (file *CameraFilePath) DownloadImage(buffer io.Writer, leaveOnCamera bool) error {
+func (c *CameraStruct) DownloadImage(buffer io.Writer, file *CameraFilePath, leaveOnCamera bool) error {
 	Log.Trace("download image")
 	_file, err := newFile()
 	if err != nil {
@@ -185,7 +199,7 @@ func (file *CameraFilePath) DownloadImage(buffer io.Writer, leaveOnCamera bool) 
 	fileName := C.CString(file.Name)
 	defer C.free(unsafe.Pointer(fileName))
 
-	res := C.gp_camera_file_get(file.camera.Camera, fileDir, fileName, FileTypeNormal, _file, file.camera.Context)
+	res := C.gp_camera_file_get(c.Camera, fileDir, fileName, FileTypeNormal, _file, c.Context)
 	if res != OK {
 		_err := "cannot download photo file, error code: " + strconv.Itoa(int(res))
 		Log.Error(_err)
@@ -194,7 +208,7 @@ func (file *CameraFilePath) DownloadImage(buffer io.Writer, leaveOnCamera bool) 
 
 	err = getFileBytes(_file, buffer)
 	if err != nil && !leaveOnCamera {
-		C.gp_camera_file_delete(file.camera.Camera, fileDir, fileName, file.camera.Context)
+		C.gp_camera_file_delete(c.Camera, fileDir, fileName, c.Context)
 		Log.Error(err.Error())
 		return err
 	}
