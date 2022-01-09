@@ -29,18 +29,6 @@ func (c *CameraStruct) Init() bool {
 			return false
 		}
 	}
-
-	// ress, err := c.GetConectedCamerasList()
-	// if err != nil {
-	// 	Log.Error(err.Error())
-	// 	return false
-	// }
-	// fmt.Println(ress)
-
-	// if !multiple {
-	// 	goto single
-	// }
-
 	if c.InitCamera() != nil {
 		return false
 	}
