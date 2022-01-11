@@ -1,4 +1,4 @@
-module gogp2
+module github.com/qazf88/gogp2
 
 go 1.17
 
