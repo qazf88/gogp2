@@ -5,9 +5,12 @@ package gogp2
 // #include <string.h>
 import "C"
 
-type GoContext C.GPContext
-type GoCamera C.Camera
+type GoContext *C.GPContext
+type CameraWidget struct {
+	widget *C.CameraWidget
+}
 type WidgetType string
+type Abilities *C.CameraAbilitiesList
 
 type Camera struct {
 	Camera       *C.Camera
@@ -17,7 +20,7 @@ type Camera struct {
 	Config       []string
 }
 
-type Widget struct {
+type widget struct {
 	Label    string     `json:"label"`
 	Name     string     `json:"name"`
 	Info     string     `json:"info"`
@@ -25,6 +28,26 @@ type Widget struct {
 	Choice   []string   `json:"choise"`
 	ReadOnly bool       `json:"readOnly"`
 	Type     WidgetType `json:"type"`
+}
+
+type Lists struct {
+	CameraList      *C.CameraList
+	AbilitiesList   *C.CameraAbilitiesList
+	PortInfoList    *C.GPPortInfoList
+	CameraListCount int
+}
+
+type CamerasList struct {
+	Name   string `json:"name"`
+	Port   string `json:"port"`
+	Number int    `json:"number"`
+}
+
+type CameraFilePath struct {
+	Name     string
+	Folder   string
+	Isdir    bool
+	Children []CameraFilePath
 }
 
 const (
@@ -65,6 +88,27 @@ const (
 	//WidgetDate : Date entering widget (int)
 	WidgetDate WidgetType = "date"
 )
+
+//File types
+const (
+	//FileTypePreview is a preview of an image
+	FileTypePreview = iota
+	//FileTypeNormal is regular normal data of a file
+	FileTypeNormal
+	//FileTypeRaw usually the same as FileTypeNormal for modern cameras ( left for compatibility purposes)
+	FileTypeRaw
+	//FileTypeAudio is a audio view of a file. Perhaps an embedded comment or similar
+	FileTypeAudio
+	//FileTypeExif is the  embedded EXIF data of an image
+	FileTypeExif
+	//FileTypeMetadata is the metadata of a file, like Metadata of files on MTP devices
+	FileTypeMetadata
+)
+
+func StringGpError(num int) string {
+	stringError := C.gp_port_result_as_string(C.int(num))
+	return C.GoString(stringError)
+}
 
 func widgetType(_WidgetType C.CameraWidgetType) WidgetType {
 	switch int(_WidgetType) {

@@ -3,35 +3,53 @@ package gogp2
 // #cgo linux pkg-config: libgphoto2
 // #include <gphoto2/gphoto2.h>
 // #include <string.h>
+// #include <stdlib.h>
 import "C"
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"strconv"
 	"unsafe"
 
 	Log "github.com/qazf88/golog"
 )
 
-//Init camera
-func (c *Camera) InitCamera() bool {
+func (c *Camera) Model() (string, error) {
+	var abilities C.CameraAbilities
+	res := C.gp_camera_get_abilities(c.Camera, &abilities)
+	if res != OK {
+		return "", fmt.Errorf("error get model :%v", res)
+	}
+	model := C.GoString((*C.char)(&abilities.model[0]))
+	return model, nil
+}
 
-	c.CameraStatus = false
-	if c.NewContext() != nil {
+//Init camera
+func (c *Camera) Init() bool {
+	if c.Context == nil {
+		if c.NewContext() != nil {
+			c.CameraStatus = false
+			return false
+		}
+	}
+	if c.Camera == nil {
+		if c.NewCamera() != nil {
+			c.CameraStatus = false
+			return false
+		}
+	}
+	if c.InitCamera() != nil {
 		return false
 	}
-	if c.newCamera() != nil {
-		return false
-	}
-	if c.initCamera() != nil {
-		return false
-	}
+
 	c.CameraStatus = true
 	Log.Info("New camera")
 	return true
 }
 
 //Get new camera
-func (c *Camera) newCamera() error {
+func (c *Camera) NewCamera() error {
 	Log.Trace("get new camera")
 	if c.Context == nil {
 		err := "could not get camera, context is empty"
@@ -39,7 +57,7 @@ func (c *Camera) newCamera() error {
 		return fmt.Errorf(err)
 	}
 	if c.Camera != nil {
-		err := "Camera is already initialized"
+		err := "camera is already initialized"
 		Log.Error(err)
 		return fmt.Errorf(err)
 	}
@@ -60,7 +78,7 @@ func (c *Camera) newCamera() error {
 }
 
 //init camera
-func (c *Camera) initCamera() error {
+func (c *Camera) InitCamera() error {
 	Log.Trace("initializing camera")
 	if c.Camera == nil {
 		err := "could not initialize camera without pointer"
@@ -71,18 +89,30 @@ func (c *Camera) initCamera() error {
 	if res != OK {
 		err := "error camera initializing: " + strconv.Itoa(int(res))
 		Log.Error(err)
-		_err := c.FreeCamera()
-		if _err != nil {
-			Log.Error(_err.Error())
-			return _err
-		}
 		return fmt.Errorf(err)
 	}
+	res = C.gp_camera_exit(c.Camera, c.Context)
+	if res != OK {
+		fmt.Println(res)
+	}
+
+	c.CameraStatus = true
 	return nil
 }
 
-//exit camera
-func (c *Camera) exitCamera() error {
+//Avalible camera
+func (c *Camera) AvalibleCamera() bool {
+	err := c.InitCamera()
+	if err != nil {
+		return false
+	} else {
+		return true
+	}
+}
+
+//Free camera
+func (c *Camera) FreeCamera() error {
+	c.CameraStatus = false
 	Log.Trace("exit camera")
 	res := C.gp_camera_exit(c.Camera, c.Context)
 	if res != OK {
@@ -90,12 +120,11 @@ func (c *Camera) exitCamera() error {
 		Log.Error(err)
 		return fmt.Errorf(err)
 	}
-	c.Camera = nil
 	return nil
 }
 
 //unref camera
-func (c *Camera) unrefCamera() error {
+func (c *Camera) UnrefCamera() error {
 	Log.Trace("unref camera")
 	res := C.gp_camera_unref(c.Camera)
 	if res != OK {
@@ -103,20 +132,92 @@ func (c *Camera) unrefCamera() error {
 		Log.Error(err)
 		return fmt.Errorf(err)
 	}
+	c.Camera = nil
 	return nil
 }
 
-//Free camera
-func (c *Camera) FreeCamera() error {
-	Log.Trace("free camera")
-	err := c.exitCamera()
+//CapturePreview  captures image preview and saves it in provided buffer
+func (c *Camera) CapturePreview(buffer io.Writer) error {
+	gpFile, err := newFile()
 	if err != nil {
 		return err
 	}
-	err = c.unrefCamera()
+
+	res := C.gp_camera_capture_preview(c.Camera, gpFile, c.Context)
+	if res != OK {
+		err := "cannot capture preview, error code: " + strconv.Itoa(int(res))
+		Log.Error(err)
+		if gpFile != nil {
+			C.gp_file_unref(gpFile)
+		}
+		return fmt.Errorf(err)
+	}
+
+	result := getFileBytes(gpFile, buffer)
+
+	if gpFile != nil {
+		C.gp_file_unref(gpFile)
+	}
+	return result
+}
+
+//Capture photo
+func (c *Camera) CapturePhoto(buffer *bytes.Buffer) error {
+	Log.Trace("capture photo")
+	type cameraFilePathInternal struct {
+		Name   [128]uint8
+		Folder [1024]uint8
+	}
+
+	photoPath := cameraFilePathInternal{}
+	res := C.gp_camera_capture(c.Camera, 0, (*C.CameraFilePath)(unsafe.Pointer(&photoPath)), c.Context)
+	if res != OK {
+		err := "cannot capture photo, error code: " + strconv.Itoa(int(res))
+		Log.Error(err)
+		return fmt.Errorf(err)
+	}
+	buff := io.Writer(buffer)
+	filePath := &CameraFilePath{
+		Name:     string(photoPath.Name[:bytes.IndexByte(photoPath.Name[:], 0)]),
+		Folder:   string(photoPath.Folder[:bytes.IndexByte(photoPath.Folder[:], 0)]),
+		Isdir:    false,
+		Children: nil,
+	}
+	err := c.DownloadImage(buff, filePath, true)
 	if err != nil {
+		Log.Error(err.Error())
+	}
+	return nil
+}
+
+// Download image from camera.
+func (c *Camera) DownloadImage(buffer io.Writer, file *CameraFilePath, leaveOnCamera bool) error {
+	Log.Trace("download image")
+	_file, err := newFile()
+	if err != nil {
+		Log.Error(err.Error())
 		return err
 	}
-	c.CameraStatus = false
+	defer C.gp_file_free(_file)
+
+	fileDir := C.CString(file.Folder)
+	defer C.free(unsafe.Pointer(fileDir))
+
+	fileName := C.CString(file.Name)
+	defer C.free(unsafe.Pointer(fileName))
+
+	res := C.gp_camera_file_get(c.Camera, fileDir, fileName, FileTypeNormal, _file, c.Context)
+	if res != OK {
+		_err := "cannot download photo file, error code: " + strconv.Itoa(int(res))
+		Log.Error(_err)
+		return fmt.Errorf(_err)
+	}
+
+	err = getFileBytes(_file, buffer)
+	if err != nil && !leaveOnCamera {
+		C.gp_camera_file_delete(c.Camera, fileDir, fileName, c.Context)
+		Log.Error(err.Error())
+		return err
+	}
 	return nil
 }
