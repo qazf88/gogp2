@@ -269,7 +269,7 @@ func getWidGetType(_widget *C.CameraWidget) (C.CameraWidgetType, error) {
 func (c *Camera) getGpWidgetByName(_name string) (*C.CameraWidget, error) {
 
 	_rootWidget, err := c.getRootWidget()
-	//defer C.free(unsafe.Pointer(_rootWidget))
+	defer C.free(unsafe.Pointer(_rootWidget))
 	if err != nil {
 		return nil, err
 	}
