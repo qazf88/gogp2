@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 
 	"fmt"
-	"strconv"
 	"unsafe"
 
 	Log "github.com/qazf88/golog"
@@ -33,7 +32,7 @@ func (c *Camera) GetConfig() (*[]string, error) {
 
 		res := C.gp_widget_get_child(rootWidget, C.int(i), (**C.CameraWidget)(unsafe.Pointer(&widgetSection)))
 		if res != OK {
-			// always return OK.
+			Log.Trace("'gp_widget_get_child()' always return OK.")
 			continue
 		}
 
@@ -42,11 +41,11 @@ func (c *Camera) GetConfig() (*[]string, error) {
 
 			res = C.gp_widget_get_child(widgetSection, C.int(j), (**C.CameraWidget)(unsafe.Pointer(&child)))
 			if res != OK {
-				// always return OK.
+				Log.Trace("'gp_widget_get_child()' always return OK.")
 				continue
 			}
 
-			widget, err := getWidget(child)
+			widget, err := getJsonWidget(child)
 			if err != nil {
 				Log.Error(err.Error())
 				continue
@@ -69,136 +68,6 @@ func (c *Camera) GetConfig() (*[]string, error) {
 	return &arrayWidget, nil
 }
 
-func (c *Camera) getRootWidget() (*C.CameraWidget, error) {
-
-	var rootWidget *C.CameraWidget
-	defer C.free(unsafe.Pointer(rootWidget))
-	res := C.gp_camera_get_config(c.Camera, (**C.CameraWidget)(unsafe.Pointer(&rootWidget)), c.Context)
-	if res != OK {
-		return nil, fmt.Errorf("error initialize camera config :%v", res)
-	}
-
-	return rootWidget, nil
-}
-
-func getWidget(_widget *C.CameraWidget) (widget, error) {
-
-	var _info *C.char
-	var _label *C.char
-	var _name *C.char
-	var _readonly C.int
-
-	res := C.gp_widget_get_name(_widget, (**C.char)(unsafe.Pointer(&_name)))
-	if res != OK {
-		err := "error get widget name: " + strconv.Itoa(int(res))
-		Log.Error(err)
-		empty := widget{}
-		return empty, fmt.Errorf(err)
-	}
-
-	wType, err := getWidGetType(_widget)
-	if err != nil {
-		Log.Error(err.Error())
-		empty := widget{}
-		return empty, err
-	}
-
-	res = C.gp_widget_get_readonly(_widget, &_readonly)
-	if res != OK {
-		err := "widget " + C.GoString(_name) + " error read 'read only': " + strconv.Itoa(int(res))
-		Log.Error(err)
-		empty := widget{}
-		return empty, fmt.Errorf(err)
-	}
-
-	C.gp_widget_get_info(_widget, (**C.char)(unsafe.Pointer(&_info)))
-	C.gp_widget_get_label(_widget, (**C.char)(unsafe.Pointer(&_label)))
-
-	value, err := getWidgetValue(_widget, wType)
-	if err != nil {
-		_err := "widget " + C.GoString(_name) + " error read value: " + err.Error()
-		Log.Error(_err)
-		empty := widget{}
-		return empty, fmt.Errorf(_err)
-	}
-
-	var choices []string
-	if wType == typeWidgetToggle {
-		if value == "2" {
-			choices = []string{"not supported"}
-			value = ""
-		} else {
-			choices = []string{"0", "1"}
-		}
-	} else {
-		choices, err = getWidgetChoices(_widget)
-		if err != nil {
-			Log.Error(err.Error())
-			empty := widget{}
-			return empty, err
-		}
-	}
-
-	_cameraWidget := widget{
-		Label:    C.GoString(_label),
-		Info:     C.GoString(_info),
-		Name:     C.GoString(_name),
-		Type:     widgetType(wType),
-		Choice:   choices,
-		Value:    value,
-		ReadOnly: (int(_readonly) == 1),
-	}
-
-	return _cameraWidget, nil
-}
-
-func getWidgetChoices(_widget *C.CameraWidget) ([]string, error) {
-
-	choicesList := []string{}
-	numChoices := C.gp_widget_count_choices(_widget)
-
-	for i := 0; i < int(numChoices); i++ {
-		var choice *C.char
-		res := C.gp_widget_get_choice(_widget, C.int(i), (**C.char)(unsafe.Pointer(&choice)))
-		if res != OK {
-			Log.Info(string(res))
-			continue
-		}
-		choicesList = append(choicesList, C.GoString(choice))
-	}
-
-	return choicesList, nil
-}
-
-func getWidgetValue(_widget *C.CameraWidget, _type C.CameraWidgetType) (string, error) {
-
-	var value *C.char
-
-	res := C.gp_widget_get_value(_widget, (unsafe.Pointer(&value)))
-	if res != OK {
-		return "", fmt.Errorf(strconv.Itoa(int(res)))
-	}
-
-	switch _type {
-	case typeWidgetText:
-		return C.GoString(value), nil
-	case typeWidgetRadio:
-		return C.GoString(value), nil
-	case typeWidgetMenu:
-		return C.GoString(value), nil
-	case typeWidgetButton:
-		return C.GoString(value), nil
-	case typeWidgetRange:
-		//return C.GoString(value), nil
-	case typeWidgetDate:
-		return fmt.Sprintf("%d", value), nil
-	case typeWidgetToggle:
-		return fmt.Sprintf("%d", value), nil
-	}
-
-	return "", fmt.Errorf("widget type not faund")
-}
-
 func (c *Camera) GetWidgetChoicesByName(wName string) ([]string, error) {
 
 	childWidget, err := c.getGpWidgetByName(wName)
@@ -206,10 +75,10 @@ func (c *Camera) GetWidgetChoicesByName(wName string) ([]string, error) {
 		return nil, err
 	}
 
-	choices, err := getWidgetChoices(childWidget)
-	if err != nil {
-		Log.Error(err.Error())
-		return nil, err
+	choices, _res := getWidgetChoices(childWidget)
+	if _res != OK {
+		Log.Warning(fmt.Sprintf("error the list of options is not complete, from widget by name %s, error code: %d ", wName, _res))
+		Log.Error(fmt.Sprintf("error the list of options is not complete, from widget by name %s, error code: %d ", wName, _res))
 	}
 
 	return choices, nil
@@ -223,7 +92,7 @@ func (c *Camera) GetWidgetByName(wName string) (*widget, error) {
 		return nil, err
 	}
 
-	_widget, err := getWidget(childWidget)
+	_widget, err := getJsonWidget(childWidget)
 	if err != nil {
 		return nil, err
 	}
@@ -239,37 +108,224 @@ func (c *Camera) GetWidgetValueByName(wName string) (string, error) {
 		return "", err
 	}
 
-	wType, err := getWidGetType(childWidget)
+	wType, err := getWidgetType(childWidget)
 	if err != nil {
 		Log.Error(err.Error())
 		return "", err
 	}
 
-	value, err := getWidgetValue(childWidget, wType)
-	if err != nil {
-		Log.Error(err.Error())
-		return "", err
+	value, _res := getWidgetValue(childWidget, wType)
+	if _res != OK {
+		err := fmt.Sprintf("error get 'value' from widget by name %s, error code: %d", wName, _res)
+		Log.Error(err)
+		return "", fmt.Errorf(err)
 	}
 	return value, nil
 }
 
-func getWidGetType(_widget *C.CameraWidget) (C.CameraWidgetType, error) {
+func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
+
+	_widget, err := c.GetWidgetByName(wName)
+	if err != nil {
+		return err
+	}
+
+	if _widget.ReadOnly {
+		return fmt.Errorf("error widget '%s' read-only", _widget.Name)
+	}
+
+	if _widget.Value == wValue {
+		return fmt.Errorf("value '%s' is already relevant", wValue)
+	}
+
+	for _, choice := range _widget.Choice {
+		if choice == wValue {
+			err := c.setValue(&wName, &wValue)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("value '%s' cannot be set", wValue)
+}
+
+func (c *Camera) getRootWidget() (*C.CameraWidget, error) {
+
+	var rootWidget *C.CameraWidget
+	defer C.free(unsafe.Pointer(rootWidget))
+	res := C.gp_camera_get_config(c.Camera, (**C.CameraWidget)(unsafe.Pointer(&rootWidget)), c.Context)
+	if res != OK {
+		return nil, fmt.Errorf("error initialize camera config, error code: %d", res)
+	}
+
+	return rootWidget, nil
+}
+
+func getStringWidgetName(_widget *C.CameraWidget) string {
+
+	var C_name *C.char
+
+	res := C.gp_widget_get_name(_widget, (**C.char)(unsafe.Pointer(&C_name)))
+	if res != OK {
+		Log.Error(fmt.Sprintf("error get widget name, error code: %d", res))
+		return ""
+	}
+
+	return C.GoString(C_name)
+}
+
+func getJsonWidget(_widget *C.CameraWidget) (widget, error) {
+
+	var C_info *C.char
+	var C_label *C.char
+	var C_name *C.char
+	var C_readonly C.int
+
+	res := C.gp_widget_get_name(_widget, (**C.char)(unsafe.Pointer(&C_name)))
+	if res != OK {
+		err := fmt.Sprintf("error get widget name, error code: %d", res)
+		Log.Error(err)
+		empty := widget{}
+		return empty, fmt.Errorf(err)
+	}
+
+	wType, err := getWidgetType(_widget)
+	if err != nil {
+		Log.Error(err.Error())
+		empty := widget{}
+		return empty, err
+	}
+
+	res = C.gp_widget_get_readonly(_widget, &C_readonly)
+	if res != OK {
+		err := fmt.Sprintf("error get 'read-only' value from widget by name %s, error code: %d", C.GoString(C_name), res)
+		Log.Error(err)
+		empty := widget{}
+		return empty, fmt.Errorf(err)
+	}
+
+	res = C.gp_widget_get_info(_widget, (**C.char)(unsafe.Pointer(&C_info)))
+	if res != OK {
+		err := fmt.Sprintf("error get 'info' value from widget by name %s, error code: %d", C.GoString(C_name), res)
+		Log.Error(err)
+		empty := widget{}
+		return empty, fmt.Errorf(err)
+	}
+
+	res = C.gp_widget_get_label(_widget, (**C.char)(unsafe.Pointer(&C_label)))
+	if res != OK {
+		err := fmt.Sprintf("error get 'label' value from widget by name %s, error code: %d", C.GoString(C_name), res)
+		Log.Error(err)
+		empty := widget{}
+		return empty, fmt.Errorf(err)
+	}
+
+	value, _res := getWidgetValue(_widget, wType)
+	if _res != OK {
+		err := fmt.Sprintf("error get 'value' from widget by name %s, error code: %d", C.GoString(C_name), res)
+		Log.Error(err)
+		empty := widget{}
+		return empty, fmt.Errorf(err)
+	}
+
+	var choices []string
+	if wType == typeWidgetToggle {
+		if value == "2" {
+			choices = []string{"not supported"}
+			value = ""
+		} else {
+			choices = []string{"0", "1"}
+		}
+	} else {
+		choices, _res = getWidgetChoices(_widget)
+		if _res != OK {
+			Log.Warning(fmt.Sprintf("error the list of options is not complete, from widget by name %s, error code: %d ", C.GoString(C_name), _res))
+			Log.Error(fmt.Sprintf("error the list of options is not complete, from widget by name %s, error code: %d ", C.GoString(C_name), _res))
+		}
+	}
+
+	_cameraWidget := widget{
+		Label:    C.GoString(C_label),
+		Info:     C.GoString(C_info),
+		Name:     C.GoString(C_name),
+		Type:     widgetType(wType),
+		Choice:   choices,
+		Value:    value,
+		ReadOnly: (int(C_readonly) == 1),
+	}
+
+	return _cameraWidget, nil
+}
+
+func getWidgetValue(_widget *C.CameraWidget, _type C.CameraWidgetType) (string, int) {
+
+	var C_value *C.char
+
+	res := C.gp_widget_get_value(_widget, (unsafe.Pointer(&C_value)))
+	if res != OK {
+
+		return "", int(res)
+	}
+
+	switch _type {
+	case typeWidgetText:
+		return C.GoString(C_value), 0
+	case typeWidgetRadio:
+		return C.GoString(C_value), 0
+	case typeWidgetMenu:
+		return C.GoString(C_value), 0
+	case typeWidgetButton:
+		return C.GoString(C_value), 0
+	case typeWidgetRange:
+		//return C.GoString(C_value), 0
+	case typeWidgetDate:
+		return fmt.Sprintf("%d", C_value), 0
+	case typeWidgetToggle:
+		return fmt.Sprintf("%d", C_value), 0
+	}
+
+	return "", -999
+}
+
+func getWidgetChoices(_widget *C.CameraWidget) ([]string, int) {
+
+	_res := 0
+
+	choicesList := []string{}
+	numChoices := C.gp_widget_count_choices(_widget)
+
+	for i := 0; i < int(numChoices); i++ {
+		var choice *C.char
+		res := C.gp_widget_get_choice(_widget, C.int(i), (**C.char)(unsafe.Pointer(&choice)))
+		if res != OK {
+			_res = int(res)
+			continue
+		}
+		choicesList = append(choicesList, C.GoString(choice))
+	}
+
+	return choicesList, _res
+}
+
+func getWidgetType(_widget *C.CameraWidget) (C.CameraWidgetType, error) {
 
 	var _widgetType C.CameraWidgetType
 
 	res := C.gp_widget_get_type(_widget, (*C.CameraWidgetType)(unsafe.Pointer(&_widgetType)))
 	if res != OK {
-		err := "could not retrieve widget type, error code" + strconv.Itoa(int(res))
+		wName := getStringWidgetName(_widget)
+		err := fmt.Sprintf("could not retrieve widget type by name %s, error code: %d", wName, res)
 		Log.Error(err)
 		return _widgetType, fmt.Errorf(err)
 	}
 	return _widgetType, nil
 }
 
-func (c *Camera) getGpWidgetByName(_name string) (*C.CameraWidget, error) {
+func (c *Camera) getGpWidgetByName(wName string) (*C.CameraWidget, error) {
 
-	_rootWidget, err := c.getRootWidget()
-	//defer C.free(unsafe.Pointer(_rootWidget))
+	rootWidget, err := c.getRootWidget()
+	defer C.free(unsafe.Pointer(rootWidget))
 	if err != nil {
 		return nil, err
 	}
@@ -277,79 +333,35 @@ func (c *Camera) getGpWidgetByName(_name string) (*C.CameraWidget, error) {
 	var childWidget *C.CameraWidget
 	defer C.free(unsafe.Pointer(childWidget))
 
-	res := C.gp_widget_get_child_by_name(_rootWidget, C.CString(_name), (**C.CameraWidget)(unsafe.Pointer(&childWidget)))
+	res := C.gp_widget_get_child_by_name(rootWidget, C.CString(wName), (**C.CameraWidget)(unsafe.Pointer(&childWidget)))
 	if res != OK {
-		err := "could not retrieve widget with name " + _name + ", error code" + strconv.Itoa(int(res))
+		err := fmt.Sprintf("could not retrieve widget by name %s, error code: %d", wName, res)
 		Log.Error(err)
 		return nil, fmt.Errorf(err)
 	}
 	return childWidget, nil
 }
 
-// func (w *CameraWidget) freeChildWidget() error{
-// 	var _rootWidget *C.CameraWidget
-// 	defer C.free(unsafe.Pointer(_rootWidget))
-// 	C.gp_widget_get_root(*w, (**C.CameraWidget)(unsafe.Pointer(&_rootWidget)))
-// 	C.free(unsafe.Pointer(_rootWidget))
-// }
+func (c *Camera) setValue(wName *string, wValue *string) error {
 
-func (c *Camera) SetValueWigetByName(wName string, wValue string) error {
-
-	choices, err := c.GetWidgetChoicesByName(wName)
+	_widget, err := c.getGpWidgetByName(*wName)
 	if err != nil {
 		Log.Error(err.Error())
 		return err
 	}
-	for _, choice := range choices {
-		if choice == wValue {
 
-			_widget, err := c.getGpWidgetByName(wName)
-			if err != nil {
-				Log.Error(err.Error())
-				return err
-			}
-			_value := C.CString(wValue)
-			defer C.free(unsafe.Pointer(_value))
-			res := C.gp_widget_set_value(_widget, unsafe.Pointer(_value))
-			//res2 := C.gp_camera_set_config(c.Camera, _widget, c.Context)
-			//	fmt.Println(res2)
-
-			if res != OK {
-				return fmt.Errorf("error set value ")
-			} else {
-				fmt.Println(res)
-
-			}
-			return nil
-		}
+	C_value := C.CString(*wValue)
+	defer C.free(unsafe.Pointer(C_value))
+	res := C.gp_widget_set_value(_widget, unsafe.Pointer(C_value))
+	if res != OK {
+		return fmt.Errorf("error setting the value for widget by name %s, error code: %d", *wName, res)
 	}
-	return fmt.Errorf("erterer")
+
+	C_name := C.CString(*wName)
+	defer C.free(unsafe.Pointer(C_name))
+	res = C.gp_camera_set_single_config(c.Camera, C_name, _widget, c.Context)
+	if res != OK {
+		return fmt.Errorf("error save widget, error code: %d", res)
+	}
+	return nil
 }
-
-// 	var value *C.char
-
-// 	res := C.gp_widget_get_value(widget, (unsafe.Pointer(&value)))
-// 	if res != OK {
-// 		return fmt.Errorf(strconv.Itoa(int(res)))
-// 	}
-
-// 	// switch _type {
-// 	// case typeWidgetText:
-// 	// 	return C.GoString(value), nil
-// 	// case typeWidgetRadio:
-// 	// 	return C.GoString(value), nil
-// 	// case typeWidgetMenu:
-// 	// 	return C.GoString(value), nil
-// 	// case typeWidgetButton:
-// 	// 	return C.GoString(value), nil
-// 	// case typeWidgetRange:
-// 	// 	//return C.GoString(value), nil
-// 	// case typeWidgetDate:
-// 	// 	return fmt.Sprintf("%d", value), nil
-// 	// case typeWidgetToggle:
-// 	// 	return fmt.Sprintf("%d", value), nil
-// 	// }
-
-// 	// return "", fmt.Errorf("widget type not faund")
-// 	return nil
-// }

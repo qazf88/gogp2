@@ -13,11 +13,8 @@ type WidgetType string
 type Abilities *C.CameraAbilitiesList
 
 type Camera struct {
-	Camera       *C.Camera
-	Context      *C.GPContext
-	Info         []string
-	CameraStatus bool
-	Config       []string
+	Camera  *C.Camera
+	Context *C.GPContext
 }
 
 type widget struct {
