@@ -39,7 +39,7 @@ func (c *Camera) Init() error {
 	}
 
 	if c.Camera != nil {
-		//	C.gp_camera_exit(c.Camera, c.Context)
+		C.gp_camera_exit(c.Camera, c.Context)
 		C.gp_camera_unref(c.Camera)
 	}
 
@@ -51,12 +51,12 @@ func (c *Camera) Init() error {
 		return fmt.Errorf(err)
 	}
 
-	res = C.gp_camera_ref(Camera)
-	if res != OK {
-		err := "error unref camera: " + strconv.Itoa(int(res))
-		Log.Error(err)
-		return fmt.Errorf(err)
-	}
+	// res = C.gp_camera_ref(Camera)
+	// if res != OK {
+	// 	err := "error unref camera: " + strconv.Itoa(int(res))
+	// 	Log.Error(err)
+	// 	return fmt.Errorf(err)
+	// }
 
 	c.Camera = Camera
 
