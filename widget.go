@@ -23,7 +23,7 @@ func (c *Camera) GetConfig() ([]byte, error) {
 		return nil, err
 	}
 
-	var arrayWidget []string
+	var arrayWidget []widget
 	var widgetSection, child *C.CameraWidget
 	defer C.free(unsafe.Pointer(widgetSection))
 	defer C.free(unsafe.Pointer(child))
@@ -46,23 +46,13 @@ func (c *Camera) GetConfig() ([]byte, error) {
 				continue
 			}
 
-			widget, err := getJsonWidget(child)
+			widget, err := getWidget(child)
 			if err != nil {
 				Log.Error(err.Error())
 				continue
 			}
 
-			fullWidjet, err := json.Marshal(widget)
-			if err != nil {
-				Log.Error(err.Error())
-				continue
-			}
-
-			//	if j == (childCountSection-1) && i == (childCountWindow-1) {
-			arrayWidget = append(arrayWidget, string(fullWidjet))
-			// } else {
-			// 	arrayWidget = append(arrayWidget, string(fullWidjet)+",")
-			// }
+			arrayWidget = append(arrayWidget, widget)
 		}
 	}
 
@@ -71,7 +61,7 @@ func (c *Camera) GetConfig() ([]byte, error) {
 		Log.Error(err.Error())
 		return nil, err
 	}
-	fmt.Println(string(configJson))
+
 	return configJson, nil
 }
 
@@ -101,7 +91,7 @@ func (c *Camera) GetWidgetByName(wName string) (*widget, error) {
 		return nil, err
 	}
 
-	_widget, err := getJsonWidget(childWidget)
+	_widget, err := getWidget(childWidget)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +179,7 @@ func getStringWidgetName(_widget *C.CameraWidget) string {
 }
 
 // getJsonWidget
-func getJsonWidget(_widget *C.CameraWidget) (widget, error) {
+func getWidget(_widget *C.CameraWidget) (widget, error) {
 
 	var C_info *C.char
 	var C_label *C.char
