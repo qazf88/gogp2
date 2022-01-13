@@ -24,6 +24,9 @@ func (c *Camera) CapturePhoto(buffer *bytes.Buffer) error {
 	photoPath := cameraFilePathInternal{}
 	res := C.gp_camera_capture(c.Camera, 0, (*C.CameraFilePath)(unsafe.Pointer(&photoPath)), c.Context)
 	if res != OK {
+		if c.Camera != nil {
+			c.FreeCamera()
+		}
 		err := fmt.Sprintf("cannot capture photo, error code: %d", res)
 		Log.Error(err)
 		return fmt.Errorf(err)
