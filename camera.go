@@ -13,6 +13,7 @@ import (
 	Log "github.com/qazf88/golog"
 )
 
+// Model
 func (c *Camera) Model() (string, error) {
 
 	var abilities C.CameraAbilities
@@ -26,6 +27,7 @@ func (c *Camera) Model() (string, error) {
 	return model, nil
 }
 
+// Init
 func (c *Camera) Init() bool {
 
 	if c.Context == nil {
@@ -49,6 +51,7 @@ func (c *Camera) Init() bool {
 	return true
 }
 
+// NewCamera
 func (c *Camera) NewCamera() error {
 
 	if c.Context == nil {
@@ -81,6 +84,7 @@ func (c *Camera) NewCamera() error {
 	return nil
 }
 
+// InitCamera
 func (c *Camera) InitCamera() error {
 
 	if c.Camera == nil {
@@ -104,6 +108,7 @@ func (c *Camera) InitCamera() error {
 	return nil
 }
 
+// AvalibleCamera
 func (c *Camera) AvalibleCamera() bool {
 
 	err := c.InitCamera()
@@ -111,6 +116,7 @@ func (c *Camera) AvalibleCamera() bool {
 
 }
 
+// FreeCamera
 func (c *Camera) FreeCamera() error {
 
 	res := C.gp_camera_exit(c.Camera, c.Context)
@@ -123,6 +129,7 @@ func (c *Camera) FreeCamera() error {
 	return nil
 }
 
+// UnrefCamera
 func (c *Camera) UnrefCamera() error {
 
 	res := C.gp_camera_unref(c.Camera)
@@ -132,14 +139,36 @@ func (c *Camera) UnrefCamera() error {
 		return fmt.Errorf(err)
 	}
 
-	c.Camera = nil
 	return nil
 }
 
+// RefCamera
+func (c *Camera) RefCamera() error {
+
+	res := C.gp_camera_ref(c.Camera)
+	if res != OK {
+		err := fmt.Sprintf("error ref camera: %d", res)
+		Log.Error(err)
+		return fmt.Errorf(err)
+	}
+
+	return nil
+}
+
+// HardResetCameraConnection !!! Warning !!!
+func (c *Camera) HardResetCameraConnection() {
+
+	Log.Info("Hard reset camera")
+
+	C.gp_camera_free(c.Camera)
+
+}
+
+// ReInitCamera
 func (c *Camera) ReInitCamera() error {
 	res := C.gp_camera_exit(c.Camera, c.Context)
 	if res != OK {
-		err := "error exit camera: " + strconv.Itoa(int(res))
+		err := fmt.Sprintf("error exit camera: %d", res)
 		Log.Error(err)
 		return fmt.Errorf(err)
 	}
@@ -150,8 +179,26 @@ func (c *Camera) ReInitCamera() error {
 		Log.Error(err)
 		return fmt.Errorf(err)
 	}
+	var Camera *C.Camera
+	res = C.gp_camera_new((**C.Camera)(unsafe.Pointer(&Camera)))
+	if res != OK {
+		err := "Error get new camera: " + strconv.Itoa(int(res))
+		Log.Error(err)
+		return fmt.Errorf(err)
+	}
 
-	c.Camera = nil
+	res = C.gp_camera_ref(Camera)
+	if res != OK {
+		err := "error unref camera: " + strconv.Itoa(int(res))
+		Log.Error(err)
+		return fmt.Errorf(err)
+	}
+	c.Camera = Camera
+	err := c.Init()
+	if !err {
+		return fmt.Errorf("error reinit")
+	}
+
 	return nil
 
 }
