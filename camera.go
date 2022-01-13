@@ -182,5 +182,7 @@ func (c *Camera) HardResetCameraConnection() {
 	Log.Info("Hard reset camera")
 
 	C.gp_camera_free(c.Camera)
+	c.Camera = nil
+	c.Context = nil
 
 }
