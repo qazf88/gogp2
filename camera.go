@@ -29,6 +29,10 @@ func (c *Camera) Model() (string, error) {
 
 // Init
 func (c *Camera) Init() error {
+	if c.Context != nil {
+		C.gp_context_cancel(c.Context)
+		C.gp_context_unref(c.Context)
+	}
 
 	if c.Context == nil {
 		err := c.NewContext()
