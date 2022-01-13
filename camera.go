@@ -124,13 +124,34 @@ func (c *Camera) FreeCamera() error {
 }
 
 func (c *Camera) UnrefCamera() error {
-	Log.Trace("unref camera")
+
 	res := C.gp_camera_unref(c.Camera)
 	if res != OK {
 		err := "error unref camera: " + strconv.Itoa(int(res))
 		Log.Error(err)
 		return fmt.Errorf(err)
 	}
+
 	c.Camera = nil
 	return nil
+}
+
+func (c *Camera) ReInitCamera() error {
+	res := C.gp_camera_exit(c.Camera, c.Context)
+	if res != OK {
+		err := "error exit camera: " + strconv.Itoa(int(res))
+		Log.Error(err)
+		return fmt.Errorf(err)
+	}
+
+	res = C.gp_camera_unref(c.Camera)
+	if res != OK {
+		err := "error unref camera: " + strconv.Itoa(int(res))
+		Log.Error(err)
+		return fmt.Errorf(err)
+	}
+
+	c.Camera = nil
+	return nil
+
 }
