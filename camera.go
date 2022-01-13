@@ -38,9 +38,10 @@ func (c *Camera) Init() error {
 		}
 	}
 
-	C.gp_camera_exit(c.Camera, c.Context)
-
-	C.gp_camera_unref(c.Camera)
+	if c.Camera != nil {
+		C.gp_camera_exit(c.Camera, c.Context)
+		C.gp_camera_unref(c.Camera)
+	}
 
 	var Camera *C.Camera
 	res := C.gp_camera_new((**C.Camera)(unsafe.Pointer(&Camera)))
