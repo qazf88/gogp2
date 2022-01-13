@@ -60,7 +60,7 @@ func (c *Camera) Init() error {
 	var Camera *C.Camera
 	res := C.gp_camera_new((**C.Camera)(unsafe.Pointer(&Camera)))
 	if res != OK {
-		err := "Error get new camera: " + strconv.Itoa(int(res))
+		err := fmt.Sprintf("Error get new camera: %d", res)
 		Log.Error(err)
 		return fmt.Errorf(err)
 	}
@@ -131,14 +131,17 @@ func (c *Camera) InitCamera() error {
 	if res != OK {
 		fmt.Println(res)
 	}
-
+	_, err := c.getRootWidget()
+	if err != nil {
+		Log.Error(err.Error())
+	}
 	return nil
 }
 
 // AvalibleCamera
 func (c *Camera) AvalibleCamera() bool {
 
-	err := c.InitCamera()
+	_, err := c.getRootWidget()
 	return err == nil
 }
 
