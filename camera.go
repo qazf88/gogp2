@@ -39,7 +39,7 @@ func (c *Camera) Init() error {
 	}
 
 	if c.Camera != nil {
-		C.gp_camera_exit(c.Camera, c.Context)
+		//	C.gp_camera_exit(c.Camera, c.Context)
 		C.gp_camera_unref(c.Camera)
 	}
 
