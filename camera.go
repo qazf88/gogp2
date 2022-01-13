@@ -39,26 +39,26 @@ func (c *Camera) Init() error {
 	}
 
 	if c.Camera != nil {
-		C.gp_camera_exit(c.Camera, c.Context)
+		//C.gp_camera_exit(c.Camera, c.Context)
 		//C.gp_camera_unref(c.Camera)
+
+		var Camera *C.Camera
+		res := C.gp_camera_new((**C.Camera)(unsafe.Pointer(&Camera)))
+		if res != OK {
+			err := "Error get new camera: " + strconv.Itoa(int(res))
+			Log.Error(err)
+			return fmt.Errorf(err)
+		}
+
+		// res = C.gp_camera_ref(Camera)
+		// if res != OK {
+		// 	err := "error unref camera: " + strconv.Itoa(int(res))
+		// 	Log.Error(err)
+		// 	return fmt.Errorf(err)
+		// }
+
+		c.Camera = Camera
 	}
-
-	var Camera *C.Camera
-	res := C.gp_camera_new((**C.Camera)(unsafe.Pointer(&Camera)))
-	if res != OK {
-		err := "Error get new camera: " + strconv.Itoa(int(res))
-		Log.Error(err)
-		return fmt.Errorf(err)
-	}
-
-	// res = C.gp_camera_ref(Camera)
-	// if res != OK {
-	// 	err := "error unref camera: " + strconv.Itoa(int(res))
-	// 	Log.Error(err)
-	// 	return fmt.Errorf(err)
-	// }
-
-	c.Camera = Camera
 
 	return nil
 
