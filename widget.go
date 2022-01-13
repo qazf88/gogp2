@@ -14,7 +14,8 @@ import (
 	Log "github.com/qazf88/golog"
 )
 
-func (c *Camera) GetConfig() (*[]string, error) {
+// GetConfig
+func (c *Camera) GetConfig() ([]string, error) {
 
 	rootWidget, err := c.getRootWidget()
 	if err != nil {
@@ -65,9 +66,10 @@ func (c *Camera) GetConfig() (*[]string, error) {
 		}
 	}
 
-	return &arrayWidget, nil
+	return arrayWidget, nil
 }
 
+// GetWidgetChoicesByName
 func (c *Camera) GetWidgetChoicesByName(wName string) ([]string, error) {
 
 	childWidget, err := c.getGpWidgetByName(wName)
@@ -84,6 +86,7 @@ func (c *Camera) GetWidgetChoicesByName(wName string) ([]string, error) {
 	return choices, nil
 }
 
+// GetWidgetByName
 func (c *Camera) GetWidgetByName(wName string) (*widget, error) {
 
 	childWidget, err := c.getGpWidgetByName(wName)
@@ -100,6 +103,7 @@ func (c *Camera) GetWidgetByName(wName string) (*widget, error) {
 	return &_widget, nil
 }
 
+// GetWidgetValueByName
 func (c *Camera) GetWidgetValueByName(wName string) (string, error) {
 
 	childWidget, err := c.getGpWidgetByName(wName)
@@ -123,6 +127,7 @@ func (c *Camera) GetWidgetValueByName(wName string) (string, error) {
 	return value, nil
 }
 
+// SetWigetValueByName
 func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
 
 	_widget, err := c.GetWidgetByName(wName)
@@ -150,6 +155,7 @@ func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
 	return fmt.Errorf("value '%s' cannot be set", wValue)
 }
 
+// getRootWidget
 func (c *Camera) getRootWidget() (*C.CameraWidget, error) {
 
 	var rootWidget *C.CameraWidget
@@ -162,6 +168,7 @@ func (c *Camera) getRootWidget() (*C.CameraWidget, error) {
 	return rootWidget, nil
 }
 
+// getStringWidgetName
 func getStringWidgetName(_widget *C.CameraWidget) string {
 
 	var C_name *C.char
@@ -175,6 +182,7 @@ func getStringWidgetName(_widget *C.CameraWidget) string {
 	return C.GoString(C_name)
 }
 
+// getJsonWidget
 func getJsonWidget(_widget *C.CameraWidget) (widget, error) {
 
 	var C_info *C.char
@@ -258,6 +266,7 @@ func getJsonWidget(_widget *C.CameraWidget) (widget, error) {
 	return _cameraWidget, nil
 }
 
+// getWidgetValue
 func getWidgetValue(_widget *C.CameraWidget, _type C.CameraWidgetType) (string, int) {
 
 	var C_value *C.char
@@ -288,6 +297,7 @@ func getWidgetValue(_widget *C.CameraWidget, _type C.CameraWidgetType) (string, 
 	return "", -999
 }
 
+// getWidgetChoices
 func getWidgetChoices(_widget *C.CameraWidget) ([]string, int) {
 
 	_res := 0
@@ -308,6 +318,7 @@ func getWidgetChoices(_widget *C.CameraWidget) ([]string, int) {
 	return choicesList, _res
 }
 
+// getWidgetType
 func getWidgetType(_widget *C.CameraWidget) (C.CameraWidgetType, error) {
 
 	var _widgetType C.CameraWidgetType
@@ -322,6 +333,7 @@ func getWidgetType(_widget *C.CameraWidget) (C.CameraWidgetType, error) {
 	return _widgetType, nil
 }
 
+// getGpWidgetByName
 func (c *Camera) getGpWidgetByName(wName string) (*C.CameraWidget, error) {
 
 	rootWidget, err := c.getRootWidget()
@@ -342,6 +354,7 @@ func (c *Camera) getGpWidgetByName(wName string) (*C.CameraWidget, error) {
 	return childWidget, nil
 }
 
+// setValue
 func (c *Camera) setValue(wName *string, wValue *string) error {
 
 	_widget, err := c.getGpWidgetByName(*wName)
