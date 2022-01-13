@@ -15,7 +15,7 @@ import (
 )
 
 // GetConfig
-func (c *Camera) GetConfig() ([]string, error) {
+func (c *Camera) GetConfig() ([]byte, error) {
 
 	rootWidget, err := c.getRootWidget()
 	if err != nil {
@@ -58,15 +58,21 @@ func (c *Camera) GetConfig() ([]string, error) {
 				continue
 			}
 
-			if j == (childCountSection-1) && i == (childCountWindow-1) {
-				arrayWidget = append(arrayWidget, string(fullWidjet))
-			} else {
-				arrayWidget = append(arrayWidget, string(fullWidjet)+",")
-			}
+			//	if j == (childCountSection-1) && i == (childCountWindow-1) {
+			arrayWidget = append(arrayWidget, string(fullWidjet))
+			// } else {
+			// 	arrayWidget = append(arrayWidget, string(fullWidjet)+",")
+			// }
 		}
 	}
 
-	return arrayWidget, nil
+	configJson, err := json.Marshal(arrayWidget)
+	if err != nil {
+		Log.Error(err.Error())
+		return nil, err
+	}
+	fmt.Println(string(configJson))
+	return configJson, nil
 }
 
 // GetWidgetChoicesByName
