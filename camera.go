@@ -49,7 +49,7 @@ func (c *Camera) Init() error {
 			return fmt.Errorf(err)
 		}
 
-		res = C.gp_camera_uref(c.Camera)
+		res = C.gp_camera_unref(c.Camera)
 		if res != OK {
 			err := fmt.Sprintf("error unref camera: %d", res)
 			Log.Error(err)
