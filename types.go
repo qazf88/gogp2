@@ -51,7 +51,17 @@ const (
 	OK = 0
 )
 
-//widget types
+// Events
+const (
+	EVENT_UNKNOWN          = iota //< unknown and unhandled event
+	EVENT_TIMEOUT                 //< timeout, no arguments
+	EVENT_FILE_ADDED              //< CameraFilePath* = file path on camfs
+	EVENT_FOLDER_ADDED            //< CameraFilePath* = folder on camfs
+	EVENT_CAPTURE_COMPLETE        //< last capture is complete
+	EVENT_FILE_CHANGED            //< CameraFilePath* = file path on camfs
+)
+
+// widget types
 const (
 	typeWidgetWindow = iota //(0)
 	typeWidgetSection
@@ -64,7 +74,7 @@ const (
 	typeWidgetDate
 )
 
-//widget types
+// widget types
 const (
 	//WidgetWindow is the toplevel configuration widget. It should likely contain multiple #WidgetSection entries.
 	WidgetWindow WidgetType = "window"
