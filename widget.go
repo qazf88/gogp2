@@ -136,7 +136,9 @@ func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
 	}
 
 	if _widget.Value == wValue {
-		return fmt.Errorf("value '%s' is already relevant", wValue)
+		Log.Info("value " + wValue + " is already relevant")
+		return nil
+		//return fmt.Errorf("value '%s' is already relevant", wValue)
 	}
 
 	for _, choice := range _widget.Choice {
