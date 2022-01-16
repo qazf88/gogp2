@@ -15,12 +15,12 @@ import (
 )
 
 // GetConfig
-func (c *Camera) GetConfig() ([]byte, error) {
+func (c *Camera) GetConfig() (string, error) {
 
 	rootWidget, err := c.getRootWidget()
 	if err != nil {
 		Log.Error(err.Error())
-		return nil, err
+		return "", err
 	}
 
 	var arrayWidget []widget
@@ -59,10 +59,10 @@ func (c *Camera) GetConfig() ([]byte, error) {
 	configJson, err := json.Marshal(arrayWidget)
 	if err != nil {
 		Log.Error(err.Error())
-		return nil, err
+		return "", err
 	}
 
-	return configJson, nil
+	return string(configJson), nil
 }
 
 // GetWidgetChoicesByName
@@ -83,20 +83,42 @@ func (c *Camera) GetWidgetChoicesByName(wName string) ([]string, error) {
 }
 
 // GetWidgetByName
-func (c *Camera) GetWidgetByName(wName string) (*widget, error) {
+func (c *Camera) GetWidgetByName(wName string) (string, error) {
 
 	childWidget, err := c.getGpWidgetByName(wName)
 	if err != nil {
 		Log.Error(err.Error())
-		return nil, err
+		return "", err
 	}
 
 	_widget, err := getWidget(childWidget)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return &_widget, nil
+	result, err := json.Marshal(_widget)
+	if err != nil {
+		return "", err
+	}
+
+	return string(result), nil
+}
+
+// getWidgetByName
+func (c *Camera) getWidgetByName(wName string) (widget, error) {
+
+	childWidget, err := c.getGpWidgetByName(wName)
+	if err != nil {
+		Log.Error(err.Error())
+		return widget{}, err
+	}
+
+	_widget, err := getWidget(childWidget)
+	if err != nil {
+		return widget{}, err
+	}
+
+	return _widget, nil
 }
 
 // GetWidgetValueByName
@@ -126,7 +148,7 @@ func (c *Camera) GetWidgetValueByName(wName string) (string, error) {
 // SetWigetValueByName
 func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
 
-	_widget, err := c.GetWidgetByName(wName)
+	_widget, err := c.getWidgetByName(wName)
 	if err != nil {
 		return err
 	}
@@ -138,7 +160,6 @@ func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
 	if _widget.Value == wValue {
 		Log.Info("value " + wValue + " is already relevant")
 		return nil
-		//return fmt.Errorf("value '%s' is already relevant", wValue)
 	}
 
 	for _, choice := range _widget.Choice {
@@ -151,6 +172,42 @@ func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
 		}
 	}
 	return fmt.Errorf("value '%s' cannot be set", wValue)
+}
+
+// SetWiget
+func (c *Camera) SetWiget(jsonWidget string) error {
+
+	newWidget := widget{}
+	err := json.Unmarshal([]byte(jsonWidget), &newWidget)
+	if err != nil {
+		Log.Error(err.Error())
+		return err
+	}
+
+	_widget, err := c.getWidgetByName(newWidget.Name)
+	if err != nil {
+		return err
+	}
+
+	if _widget.ReadOnly {
+		return fmt.Errorf("error widget '%s' read-only", _widget.Name)
+	}
+
+	if _widget.Value == newWidget.Value {
+		Log.Info("value " + newWidget.Value + " is already relevant")
+		return nil
+	}
+
+	for _, choice := range _widget.Choice {
+		if choice == newWidget.Value {
+			err := c.setValue(&newWidget.Name, &newWidget.Value)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("value '%s' cannot be set widget", newWidget.Name)
 }
 
 // getRootWidget
@@ -180,7 +237,7 @@ func getStringWidgetName(_widget *C.CameraWidget) string {
 	return C.GoString(C_name)
 }
 
-// getJsonWidget
+// getWidget
 func getWidget(_widget *C.CameraWidget) (widget, error) {
 
 	var C_info *C.char
