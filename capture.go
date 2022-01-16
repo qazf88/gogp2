@@ -16,7 +16,7 @@ import (
 )
 
 // CaptureExternalEvent
-func (c *Camera) CaptureExternalEvent(timeout int, bufferOut io.Writer) error {
+func (c *Camera) CaptureExternalEvent(timeout int, bufferOut *io.Writer) error {
 
 	file, err := newFile()
 	if err != nil {
@@ -55,7 +55,7 @@ func (c *Camera) CaptureExternalEvent(timeout int, bufferOut io.Writer) error {
 				return fmt.Errorf(err)
 			}
 
-			err := getFileBytes(file, bufferOut)
+			err := getFileBytes(file, *bufferOut)
 			if err != nil {
 				C.gp_camera_file_delete(c.Camera, (*C.char)(&cameraFilePath.folder[0]), (*C.char)(&cameraFilePath.name[0]), c.Context)
 				Log.Error(err.Error())
