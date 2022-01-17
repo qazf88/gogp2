@@ -175,10 +175,10 @@ func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
 }
 
 // SetWiget
-func (c *Camera) SetWiget(jsonWidget string) error {
+func (c *Camera) SetWiget(jsonWidget []byte) error {
 
 	newWidget := widget{}
-	err := json.Unmarshal([]byte(jsonWidget), &newWidget)
+	err := json.Unmarshal(jsonWidget, &newWidget)
 	if err != nil {
 		Log.Error(err.Error())
 		return err
@@ -219,7 +219,7 @@ func (c *Camera) SetWigetArray(widgets string, missError bool, restoreOld bool) 
 
 	newWidget := []widget{}
 	oldWidget := []widget{}
-	errors := make([]error, 20)
+	errors := []error{}
 
 	err := json.Unmarshal([]byte(widgets), &newWidget)
 	if err != nil {
