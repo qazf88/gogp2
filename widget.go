@@ -260,15 +260,15 @@ func (c *Camera) SetWigetArray(widgets []byte, missError bool, restoreOld bool) 
 				if err != nil {
 					errors = append(errors, err)
 					if missError {
-						goto next
+						break
 					} else {
 						return errors
 					}
 				}
 			}
 		}
-	next:
-		err = fmt.Errorf("name '%s' cannot be set widget", newWidget[i].Name)
+
+		err = fmt.Errorf("not faund widget name '%s'", newWidget[i].Name)
 		errors = append(errors, err)
 		if missError {
 			continue
