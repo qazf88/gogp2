@@ -316,7 +316,6 @@ func (c *Camera) getWidgetByName(wName string) (widget, error) {
 
 	childWidget, err := c.getGpWidgetByName(wName)
 	if err != nil {
-		Log.Error(err.Error())
 		return widget{}, err
 	}
 
@@ -339,14 +338,12 @@ func getWidget(_widget *C.CameraWidget) (widget, error) {
 	res := C.gp_widget_get_name(_widget, (**C.char)(unsafe.Pointer(&C_name)))
 	if res != OK {
 		err := fmt.Sprintf("error get widget name, error code: %d", res)
-		Log.Error(err)
 		empty := widget{}
 		return empty, fmt.Errorf(err)
 	}
 
 	wType, err := getWidgetType(_widget)
 	if err != nil {
-		Log.Error(err.Error())
 		empty := widget{}
 		return empty, err
 	}
