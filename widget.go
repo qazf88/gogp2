@@ -234,7 +234,9 @@ func (c *Camera) SetWigetArray(widgets string, missError bool, restoreOld bool) 
 
 		result, err := c.GetConfig()
 		if err != nil {
-			fmt.Println(err)
+			Log.Error(err.Error())
+			errors = append(errors, err)
+			return errors
 		}
 
 		err = json.Unmarshal([]byte(result), &oldWidget)
@@ -249,21 +251,20 @@ func (c *Camera) SetWigetArray(widgets string, missError bool, restoreOld bool) 
 	for i := 0; i < widgetLength; i++ {
 		_widget, err := c.getWidgetByName(newWidget[i].Name)
 		if err != nil {
+			errors = append(errors, err)
 			if missError {
-				errors = append(errors, err)
 				continue
 			} else {
-				errors = append(errors, err)
 				return errors
 			}
 		}
 
 		if _widget.ReadOnly {
 			err = fmt.Errorf("error widget '%s' read-only", _widget.Name)
+			errors = append(errors, err)
 			if missError {
-				errors = append(errors, err)
+				continue
 			} else {
-				errors = append(errors, err)
 				return errors
 			}
 		}
