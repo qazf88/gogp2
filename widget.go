@@ -104,23 +104,6 @@ func (c *Camera) GetWidgetByName(wName string) (string, error) {
 	return string(result), nil
 }
 
-// getWidgetByName
-func (c *Camera) getWidgetByName(wName string) (widget, error) {
-
-	childWidget, err := c.getGpWidgetByName(wName)
-	if err != nil {
-		Log.Error(err.Error())
-		return widget{}, err
-	}
-
-	_widget, err := getWidget(childWidget)
-	if err != nil {
-		return widget{}, err
-	}
-
-	return _widget, nil
-}
-
 // GetWidgetValueByName
 func (c *Camera) GetWidgetValueByName(wName string) (string, error) {
 
@@ -208,7 +191,6 @@ func (c *Camera) SetWiget(jsonWidget []byte) error {
 		}
 	}
 	return fmt.Errorf("name '%s' cannot be set widget", newWidget.Name)
-
 }
 
 // SetWigetArray
@@ -280,14 +262,14 @@ func (c *Camera) SetWigetArray(widgets string, missError bool, restoreOld bool) 
 				if err != nil {
 					errors = append(errors, err)
 					if missError {
-						continue
+						goto next
 					} else {
 						return errors
 					}
 				}
-				continue
 			}
 		}
+	next:
 		err = fmt.Errorf("name '%s' cannot be set widget", newWidget[i].Name)
 		errors = append(errors, err)
 		if missError {
@@ -329,6 +311,23 @@ func getStringWidgetName(_widget *C.CameraWidget) string {
 	}
 
 	return C.GoString(C_name)
+}
+
+// getWidgetByName
+func (c *Camera) getWidgetByName(wName string) (widget, error) {
+
+	childWidget, err := c.getGpWidgetByName(wName)
+	if err != nil {
+		Log.Error(err.Error())
+		return widget{}, err
+	}
+
+	_widget, err := getWidget(childWidget)
+	if err != nil {
+		return widget{}, err
+	}
+
+	return _widget, nil
 }
 
 // getWidget
