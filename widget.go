@@ -197,13 +197,13 @@ func (c *Camera) SetWiget(jsonWidget []byte) error {
 //   if missError value is set true, set all widgets and return all errors as an array
 //   if missError value is set false, return last error and out
 //   if restoreOld value is set true and has error  restore all changet value to old
-func (c *Camera) SetWigetArray(widgets string, missError bool, restoreOld bool) []error {
+func (c *Camera) SetWigetArray(widgets []byte, missError bool, restoreOld bool) []error {
 
 	newWidget := []widget{}
 	oldWidget := []widget{}
 	errors := []error{}
 
-	err := json.Unmarshal([]byte(widgets), &newWidget)
+	err := json.Unmarshal(widgets, &newWidget)
 	if err != nil {
 		Log.Error(err.Error())
 		errors = append(errors, err)
@@ -213,7 +213,6 @@ func (c *Camera) SetWigetArray(widgets string, missError bool, restoreOld bool) 
 	widgetLength := len(newWidget)
 
 	if restoreOld {
-
 		result, err := c.GetConfig()
 		if err != nil {
 			Log.Error(err.Error())
@@ -227,7 +226,6 @@ func (c *Camera) SetWigetArray(widgets string, missError bool, restoreOld bool) 
 			errors = append(errors, err)
 			return errors
 		}
-
 	}
 
 	for i := 0; i < widgetLength; i++ {
