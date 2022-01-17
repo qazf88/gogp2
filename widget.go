@@ -177,14 +177,15 @@ func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
 // SetWiget
 func (c *Camera) SetWiget(jsonWidget string) error {
 
-	newWidget := widget{}
-	err := json.Unmarshal([]byte(jsonWidget), &newWidget)
+	newWidget := []widget{}
+	//	newArayWidget := []widget{}
+	err := json.Unmarshal([]byte("["+jsonWidget+"]"), &newWidget)
 	if err != nil {
 		Log.Error(err.Error())
 		return err
 	}
 
-	_widget, err := c.getWidgetByName(newWidget.Name)
+	_widget, err := c.getWidgetByName(newWidget[0].Name)
 	if err != nil {
 		return err
 	}
@@ -193,21 +194,21 @@ func (c *Camera) SetWiget(jsonWidget string) error {
 		return fmt.Errorf("error widget '%s' read-only", _widget.Name)
 	}
 
-	if _widget.Value == newWidget.Value {
-		Log.Info("value " + newWidget.Value + " is already relevant")
+	if _widget.Value == newWidget[0].Value {
+		Log.Info("value " + newWidget[0].Value + " is already relevant")
 		return nil
 	}
 
 	for _, choice := range _widget.Choice {
-		if choice == newWidget.Value {
-			err := c.setValue(&newWidget.Name, &newWidget.Value)
+		if choice == newWidget[0].Value {
+			err := c.setValue(&newWidget[0].Name, &newWidget[0].Value)
 			if err != nil {
 				return err
 			}
 			return nil
 		}
 	}
-	return fmt.Errorf("value '%s' cannot be set widget", newWidget.Name)
+	return fmt.Errorf("value '%s' cannot be set widget", newWidget[0].Name)
 }
 
 // getRootWidget
