@@ -178,7 +178,6 @@ func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
 func (c *Camera) SetWiget(jsonWidget string) error {
 
 	newWidget := []widget{}
-	//	newArayWidget := []widget{}
 	err := json.Unmarshal([]byte("["+jsonWidget+"]"), &newWidget)
 	if err != nil {
 		Log.Error(err.Error())
@@ -208,7 +207,7 @@ func (c *Camera) SetWiget(jsonWidget string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("value '%s' cannot be set widget", newWidget[0].Name)
+	return fmt.Errorf("name '%s' cannot be set widget", newWidget[0].Name)
 }
 
 // getRootWidget
