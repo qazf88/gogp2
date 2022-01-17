@@ -219,7 +219,7 @@ func (c *Camera) SetWigetArray(widgets string, missError bool, restoreOld bool) 
 
 	newWidget := []widget{}
 	oldWidget := []widget{}
-	errors := []error{}
+	errors := make([]error, 20)
 
 	err := json.Unmarshal([]byte(widgets), &newWidget)
 	if err != nil {
@@ -495,7 +495,7 @@ func (c *Camera) getGpWidgetByName(wName string) (*C.CameraWidget, error) {
 
 	res := C.gp_widget_get_child_by_name(rootWidget, C.CString(wName), (**C.CameraWidget)(unsafe.Pointer(&childWidget)))
 	if res != OK {
-		err := fmt.Sprintf("could not retrieve widget by name %s, error code: %d", wName, res)
+		err := fmt.Sprintf("could not retrieve widget by name '%s', error code: %d", wName, res)
 		Log.Error(err)
 		return nil, fmt.Errorf(err)
 	}
