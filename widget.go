@@ -213,22 +213,6 @@ func (c *Camera) SetWigetArray(widgets []byte, missError bool, restoreOld bool) 
 
 	widgetLength := len(newWidget)
 
-	// if restoreOld {
-	// 	result, err := c.GetConfig()
-	// 	if err != nil {
-	// 		Log.Error(err.Error())
-	// 		errors = append(errors, err)
-	// 		return errors
-	// 	}
-
-	// 	err = json.Unmarshal([]byte(result), &oldWidget)
-	// 	if err != nil {
-	// 		Log.Error(err.Error())
-	// 		errors = append(errors, err)
-	// 		return errors
-	// 	}
-	// }
-
 	for i := 0; i < widgetLength; i++ {
 		_widget, err := c.getWidgetByName(newWidget[i].Name)
 		if err != nil {
