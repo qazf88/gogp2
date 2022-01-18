@@ -17,11 +17,11 @@ import (
 // GetConfig
 func (c *Camera) GetConfig() (string, error) {
 
-	// rootWidget, err := c.getRootWidget()
-	// if err != nil {
-	// 	Log.Error(err.Error())
-	// 	return "", err
-	// }
+	err := c.Init()
+	if err != nil {
+		Log.Error(err.Error())
+		return "", err
+	}
 
 	var arrayWidget []widget
 	var widgetSection, child *C.CameraWidget
