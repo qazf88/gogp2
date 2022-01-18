@@ -17,21 +17,21 @@ import (
 // GetConfig
 func (c *Camera) GetConfig() (string, error) {
 
-	rootWidget, err := c.getRootWidget()
-	if err != nil {
-		Log.Error(err.Error())
-		return "", err
-	}
+	// rootWidget, err := c.getRootWidget()
+	// if err != nil {
+	// 	Log.Error(err.Error())
+	// 	return "", err
+	// }
 
 	var arrayWidget []widget
 	var widgetSection, child *C.CameraWidget
 	defer C.free(unsafe.Pointer(widgetSection))
 	defer C.free(unsafe.Pointer(child))
 
-	childCountWindow := int(C.gp_widget_count_children(rootWidget))
+	childCountWindow := int(C.gp_widget_count_children(c.RootWidget))
 	for i := 0; i < childCountWindow; i++ {
 
-		res := C.gp_widget_get_child(rootWidget, C.int(i), (**C.CameraWidget)(unsafe.Pointer(&widgetSection)))
+		res := C.gp_widget_get_child(c.RootWidget, C.int(i), (**C.CameraWidget)(unsafe.Pointer(&widgetSection)))
 		if res != OK {
 			Log.Trace("'gp_widget_get_child()' always return OK.")
 			continue
@@ -73,7 +73,7 @@ func (c *Camera) GetWidgetChoicesByName(wName string) ([]string, error) {
 		return nil, err
 	}
 
-	choices, _res := getWidgetChoices(childWidget)
+	choices, _res := getWidgetChoices(*childWidget)
 	if _res != OK {
 		Log.Warning(fmt.Sprintf("error the list of options is not complete, from widget by name %s, error code: %d ", wName, _res))
 		Log.Error(fmt.Sprintf("error the list of options is not complete, from widget by name %s, error code: %d ", wName, _res))
@@ -91,7 +91,7 @@ func (c *Camera) GetWidgetByName(wName string) (string, error) {
 		return "", err
 	}
 
-	_widget, err := getWidget(childWidget)
+	_widget, err := getWidget(*childWidget)
 	if err != nil {
 		return "", err
 	}
@@ -113,13 +113,13 @@ func (c *Camera) GetWidgetValueByName(wName string) (string, error) {
 		return "", err
 	}
 
-	wType, err := getWidgetType(childWidget)
+	wType, err := getWidgetType(*childWidget)
 	if err != nil {
 		Log.Error(err.Error())
 		return "", err
 	}
 
-	value, _res := getWidgetValue(childWidget, wType)
+	value, _res := getWidgetValue(*childWidget, wType)
 	if _res != OK {
 		err := fmt.Sprintf("error get 'value' from widget by name %s, error code: %d", wName, _res)
 		Log.Error(err)
@@ -285,30 +285,30 @@ func (c *Camera) SetWigetArray(widgets []byte, missError bool, restoreOld bool) 
 }
 
 // getRootWidget
-func (c *Camera) getRootWidget() (*C.CameraWidget, error) {
+func (c *Camera) getRootWidget() (**C.CameraWidget, error) {
 
 	var rootWidget *C.CameraWidget
 	defer C.free(unsafe.Pointer(rootWidget))
+
 	res := C.gp_camera_get_config(c.Camera, (**C.CameraWidget)(unsafe.Pointer(&rootWidget)), c.Context)
 	if res != OK {
 		return nil, fmt.Errorf("error initialize camera config, error code: %d", res)
 	}
 
-	return rootWidget, nil
+	return &rootWidget, nil
 }
 
 // getStringWidgetName
-func getStringWidgetName(_widget *C.CameraWidget) string {
+func getStringWidgetName(_widget *C.CameraWidget) (string, error) {
 
 	var C_name *C.char
 
 	res := C.gp_widget_get_name(_widget, (**C.char)(unsafe.Pointer(&C_name)))
 	if res != OK {
-		Log.Error(fmt.Sprintf("error get widget name, error code: %d", res))
-		return ""
+		return "", fmt.Errorf("error get widget name, error code: %d", res)
 	}
 
-	return C.GoString(C_name)
+	return C.GoString(C_name), nil
 }
 
 // getWidgetByName
@@ -319,7 +319,7 @@ func (c *Camera) getWidgetByName(wName string) (widget, error) {
 		return widget{}, err
 	}
 
-	_widget, err := getWidget(childWidget)
+	_widget, err := getWidget(*childWidget)
 	if err != nil {
 		return widget{}, err
 	}
@@ -338,46 +338,32 @@ func getWidget(_widget *C.CameraWidget) (widget, error) {
 	res := C.gp_widget_get_name(_widget, (**C.char)(unsafe.Pointer(&C_name)))
 	if res != OK {
 		err := fmt.Sprintf("error get widget name, error code: %d", res)
-		empty := widget{}
-		return empty, fmt.Errorf(err)
+		return widget{}, fmt.Errorf(err)
 	}
 
 	wType, err := getWidgetType(_widget)
 	if err != nil {
-		empty := widget{}
-		return empty, err
+		return widget{}, err
 	}
 
 	res = C.gp_widget_get_readonly(_widget, &C_readonly)
 	if res != OK {
-		err := fmt.Sprintf("error get 'read-only' value from widget by name %s, error code: %d", C.GoString(C_name), res)
-		Log.Error(err)
-		empty := widget{}
-		return empty, fmt.Errorf(err)
+		return widget{}, fmt.Errorf("error get 'read-only' value from widget by name '%s', error code: %d", C.GoString(C_name), res)
 	}
 
 	res = C.gp_widget_get_info(_widget, (**C.char)(unsafe.Pointer(&C_info)))
 	if res != OK {
-		err := fmt.Sprintf("error get 'info' value from widget by name %s, error code: %d", C.GoString(C_name), res)
-		Log.Error(err)
-		empty := widget{}
-		return empty, fmt.Errorf(err)
+		return widget{}, fmt.Errorf("error get 'info' value from widget by name '%s', error code: %d", C.GoString(C_name), res)
 	}
 
 	res = C.gp_widget_get_label(_widget, (**C.char)(unsafe.Pointer(&C_label)))
 	if res != OK {
-		err := fmt.Sprintf("error get 'label' value from widget by name %s, error code: %d", C.GoString(C_name), res)
-		Log.Error(err)
-		empty := widget{}
-		return empty, fmt.Errorf(err)
+		return widget{}, fmt.Errorf("error get 'label' value from widget by name '%s', error code: %d", C.GoString(C_name), res)
 	}
 
 	value, _res := getWidgetValue(_widget, wType)
 	if _res != OK {
-		err := fmt.Sprintf("error get 'value' from widget by name %s, error code: %d", C.GoString(C_name), res)
-		Log.Error(err)
-		empty := widget{}
-		return empty, fmt.Errorf(err)
+		return widget{}, fmt.Errorf("error get 'value' from widget by name '%s', error code: %d", C.GoString(C_name), res)
 	}
 
 	var choices []string
@@ -391,8 +377,7 @@ func getWidget(_widget *C.CameraWidget) (widget, error) {
 	} else {
 		choices, _res = getWidgetChoices(_widget)
 		if _res != OK {
-			Log.Warning(fmt.Sprintf("error the list of options is not complete, from widget by name %s, error code: %d ", C.GoString(C_name), _res))
-			Log.Error(fmt.Sprintf("error the list of options is not complete, from widget by name %s, error code: %d ", C.GoString(C_name), _res))
+			Log.Warning(fmt.Sprintf("error the list of options is not complete, from widget by name '%s', error code: %d ", C.GoString(C_name), _res))
 		}
 	}
 
@@ -416,7 +401,6 @@ func getWidgetValue(_widget *C.CameraWidget, _type C.CameraWidgetType) (string, 
 
 	res := C.gp_widget_get_value(_widget, (unsafe.Pointer(&C_value)))
 	if res != OK {
-
 		return "", int(res)
 	}
 
@@ -468,31 +452,25 @@ func getWidgetType(_widget *C.CameraWidget) (C.CameraWidgetType, error) {
 
 	res := C.gp_widget_get_type(_widget, (*C.CameraWidgetType)(unsafe.Pointer(&_widgetType)))
 	if res != OK {
-		wName := getStringWidgetName(_widget)
-		err := fmt.Sprintf("could not retrieve widget type by name %s, error code: %d", wName, res)
-		Log.Error(err)
-		return _widgetType, fmt.Errorf(err)
+		wName, err := getStringWidgetName(_widget)
+		if err != nil {
+			return _widgetType, fmt.Errorf("could not retrieve widget type , error code: %d", res)
+		}
+		return _widgetType, fmt.Errorf("could not retrieve widget type by name %s, error code: %d", wName, res)
 	}
+
 	return _widgetType, nil
 }
 
 // getGpWidgetByName
-func (c *Camera) getGpWidgetByName(wName string) (*C.CameraWidget, error) {
+func (c *Camera) getGpWidgetByName(wName string) (**C.CameraWidget, error) {
 
-	rootWidget, err := c.getRootWidget()
-	defer C.free(unsafe.Pointer(rootWidget))
-	if err != nil {
-		return nil, err
-	}
-
-	var childWidget *C.CameraWidget
+	var childWidget **C.CameraWidget
 	defer C.free(unsafe.Pointer(childWidget))
 
-	res := C.gp_widget_get_child_by_name(rootWidget, C.CString(wName), (**C.CameraWidget)(unsafe.Pointer(&childWidget)))
+	res := C.gp_widget_get_child_by_name(c.RootWidget, C.CString(wName), (**C.CameraWidget)(unsafe.Pointer(&childWidget)))
 	if res != OK {
-		err := fmt.Sprintf("could not retrieve widget by name '%s', error code: %d", wName, res)
-		Log.Error(err)
-		return nil, fmt.Errorf(err)
+		return nil, fmt.Errorf("could not retrieve widget by name '%s', error code: %d", wName, res)
 	}
 	return childWidget, nil
 }
@@ -502,22 +480,23 @@ func (c *Camera) setValue(wName *string, wValue *string) error {
 
 	_widget, err := c.getGpWidgetByName(*wName)
 	if err != nil {
-		Log.Error(err.Error())
 		return err
 	}
 
 	C_value := C.CString(*wValue)
 	defer C.free(unsafe.Pointer(C_value))
-	res := C.gp_widget_set_value(_widget, unsafe.Pointer(C_value))
+
+	res := C.gp_widget_set_value(*_widget, unsafe.Pointer(C_value))
 	if res != OK {
-		return fmt.Errorf("error setting the value for widget by name %s, error code: %d", *wName, res)
+		return fmt.Errorf("error setting the value for widget by name '%s', error code: %d", *wName, res)
 	}
 
 	C_name := C.CString(*wName)
 	defer C.free(unsafe.Pointer(C_name))
-	res = C.gp_camera_set_single_config(c.Camera, C_name, _widget, c.Context)
+
+	res = C.gp_camera_set_single_config(c.Camera, C_name, *_widget, c.Context)
 	if res != OK {
-		return fmt.Errorf("error save widget, error code: %d", res)
+		return fmt.Errorf("error save widget by name '%s', error code: %d", *wName, res)
 	}
 	return nil
 }

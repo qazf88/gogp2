@@ -131,10 +131,11 @@ func (c *Camera) InitCamera() error {
 	if res != OK {
 		fmt.Println(res)
 	}
-	_, err := c.getRootWidget()
+	rootWidget, err := c.getRootWidget()
 	if err != nil {
 		Log.Error(err.Error())
 	}
+	c.RootWidget = *rootWidget
 	return nil
 }
 
