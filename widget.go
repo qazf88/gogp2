@@ -190,7 +190,7 @@ func (c *Camera) SetWiget(jsonWidget []byte) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("name '%s' cannot be set widget", newWidget.Name)
+	return fmt.Errorf("widget by name '%s' cannot be set value '%s' invalid value", newWidget.Name, newWidget.Value)
 }
 
 // SetWigetArray
