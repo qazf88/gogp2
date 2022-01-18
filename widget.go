@@ -121,7 +121,7 @@ func (c *Camera) GetWidgetValueByName(wName string) (string, error) {
 
 	value, _res := getWidgetValue(childWidget, wType)
 	if _res != OK {
-		err := fmt.Sprintf("error get 'value' from widget by name %s, error code: %d", wName, _res)
+		err := fmt.Sprintf("error get 'value' from widget by name '%s', error code: %d", wName, _res)
 		Log.Error(err)
 		return "", fmt.Errorf(err)
 	}
@@ -194,9 +194,10 @@ func (c *Camera) SetWiget(jsonWidget []byte) error {
 }
 
 // SetWigetArray
-//   if missError value is set true, set all widgets and return all errors as an array
-//   if missError value is set false, return last error and out
-//   if restoreOld value is set true and has error  restore all changet value to old
+//   !!! restoreOld not work if missError set true !!!
+//   if value of missError is set to true, set all possible widgets and return all errors as an array
+//   if value of missError is set to false, return last error and out
+//   if value of restoreOld is set to true and installed widget has an error, it stops working, restores all changed values ​​to old
 func (c *Camera) SetWigetArray(widgets []byte, missError bool, restoreOld bool) []error {
 
 	newWidget := []widget{}
@@ -212,21 +213,21 @@ func (c *Camera) SetWigetArray(widgets []byte, missError bool, restoreOld bool) 
 
 	widgetLength := len(newWidget)
 
-	if restoreOld {
-		result, err := c.GetConfig()
-		if err != nil {
-			Log.Error(err.Error())
-			errors = append(errors, err)
-			return errors
-		}
+	// if restoreOld {
+	// 	result, err := c.GetConfig()
+	// 	if err != nil {
+	// 		Log.Error(err.Error())
+	// 		errors = append(errors, err)
+	// 		return errors
+	// 	}
 
-		err = json.Unmarshal([]byte(result), &oldWidget)
-		if err != nil {
-			Log.Error(err.Error())
-			errors = append(errors, err)
-			return errors
-		}
-	}
+	// 	err = json.Unmarshal([]byte(result), &oldWidget)
+	// 	if err != nil {
+	// 		Log.Error(err.Error())
+	// 		errors = append(errors, err)
+	// 		return errors
+	// 	}
+	// }
 
 	for i := 0; i < widgetLength; i++ {
 		_widget, err := c.getWidgetByName(newWidget[i].Name)
@@ -235,7 +236,11 @@ func (c *Camera) SetWigetArray(widgets []byte, missError bool, restoreOld bool) 
 			if missError {
 				continue
 			} else {
-				return errors
+				if restoreOld {
+					goto restore
+				} else {
+					return errors
+				}
 			}
 		}
 
@@ -245,12 +250,16 @@ func (c *Camera) SetWigetArray(widgets []byte, missError bool, restoreOld bool) 
 			if missError {
 				continue
 			} else {
-				return errors
+				if restoreOld {
+					goto restore
+				} else {
+					return errors
+				}
 			}
 		}
 
 		if _widget.Value == newWidget[i].Value {
-			Log.Info("value " + newWidget[0].Value + " is already relevant")
+			Log.Info("value " + newWidget[i].Value + " is already relevant")
 			continue
 		}
 
@@ -262,18 +271,27 @@ func (c *Camera) SetWigetArray(widgets []byte, missError bool, restoreOld bool) 
 					if missError {
 						break
 					} else {
-						return errors
+						if restoreOld {
+							goto restore
+						} else {
+							return errors
+						}
 					}
 				}
+				oldWidget = append(oldWidget, _widget)
 			}
 		}
 
-		err = fmt.Errorf("not faund widget name '%s'", newWidget[i].Name)
+		err = fmt.Errorf("not found or alredy installed widget by name '%s'", newWidget[i].Name)
 		errors = append(errors, err)
 		if missError {
 			continue
 		} else {
-			return errors
+			if restoreOld {
+				goto restore
+			} else {
+				return errors
+			}
 		}
 	}
 
@@ -282,6 +300,42 @@ func (c *Camera) SetWigetArray(widgets []byte, missError bool, restoreOld bool) 
 	}
 
 	return errors
+
+restore:
+	for i := 0; i < len(oldWidget); i++ {
+		_widget, err := c.getWidgetByName(oldWidget[i].Name)
+		fmt.Println(oldWidget[i].Name)
+		if err != nil {
+			errors = append(errors, err)
+			continue
+		}
+
+		if _widget.ReadOnly {
+			err = fmt.Errorf("error widget '%s' read-only", _widget.Name)
+			errors = append(errors, err)
+			continue
+		}
+
+		if _widget.Value == oldWidget[i].Value {
+			Log.Info("value " + oldWidget[i].Value + " is already relevant")
+			continue
+		}
+
+		for _, choice := range _widget.Choice {
+			if choice == oldWidget[i].Value {
+				err := c.setValue(&oldWidget[i].Name, &oldWidget[i].Value)
+				if err != nil {
+					errors = append(errors, err)
+					continue
+				}
+			}
+		}
+
+		err = fmt.Errorf("not found or alredy installed widget by name '%s'", oldWidget[i].Name)
+		errors = append(errors, err)
+	}
+	return errors
+
 }
 
 // getRootWidget
@@ -428,7 +482,6 @@ func getWidgetValue(_widget *C.CameraWidget, _type C.CameraWidgetType) (string, 
 func getWidgetChoices(_widget *C.CameraWidget) ([]string, int) {
 
 	_res := 0
-
 	choicesList := []string{}
 	numChoices := C.gp_widget_count_choices(_widget)
 
