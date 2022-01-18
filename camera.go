@@ -115,7 +115,7 @@ func (c *Camera) NewCamera() error {
 func (c *Camera) InitCamera() error {
 
 	if c.Camera == nil {
-		err := "could not initialize camera without pointer"
+		err := "camera not avalible"
 		Log.Error(err)
 		return fmt.Errorf(err)
 	}
