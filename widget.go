@@ -266,7 +266,7 @@ func (c *Camera) SetWigetArray(widgets []byte, missError bool, restoreOld bool) 
 			}
 		}
 
-		err = fmt.Errorf("not found or alredy installed widget by name '%s'", newWidget[i].Name)
+		err = fmt.Errorf("could not retrieve or alredy installed widget by name '%s'", newWidget[i].Name)
 		errors = append(errors, err)
 		if missError {
 			continue
@@ -315,7 +315,7 @@ restore:
 			}
 		}
 
-		err = fmt.Errorf("not found or alredy installed widget by name '%s'", oldWidget[i].Name)
+		err = fmt.Errorf("could not retrieveor alredy installed widget by name '%s'", oldWidget[i].Name)
 		errors = append(errors, err)
 	}
 	return errors
