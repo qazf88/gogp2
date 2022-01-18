@@ -137,7 +137,7 @@ func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
 	}
 
 	if _widget.ReadOnly {
-		return fmt.Errorf("error widget '%s' read-only", _widget.Name)
+		return fmt.Errorf("error widget by name '%s' read-only", _widget.Name)
 	}
 
 	if _widget.Value == wValue {
@@ -154,7 +154,7 @@ func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("value '%s' cannot be set", wValue)
+	return fmt.Errorf("widget by name '%s' cannot be set value '%s' invalid value", wName, wValue)
 }
 
 // SetWiget
@@ -173,7 +173,7 @@ func (c *Camera) SetWiget(jsonWidget []byte) error {
 	}
 
 	if _widget.ReadOnly {
-		return fmt.Errorf("error widget '%s' read-only", _widget.Name)
+		return fmt.Errorf("error widget by name '%s' read-only", _widget.Name)
 	}
 
 	if _widget.Value == newWidget.Value {
