@@ -143,6 +143,7 @@ func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
 	oldValue := _widget.Value
 
 	if oldValue == wValue {
+
 		Log.Info("value " + wValue + " is already relevant")
 		return nil
 	}
