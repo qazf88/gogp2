@@ -39,15 +39,17 @@ func (c *Camera) CaptureExternalEvent(timeout int, bufferOut io.Writer) error {
 		default:
 			res := C.gp_camera_wait_for_event(c.Camera, C.int(timeout+5), &eventType, &vp, c.Context)
 			if res != OK {
-				err := fmt.Sprintf("error wait event, error code: %d", res)
+				err := fmt.Sprintf("error wait for event, error code: %d", res)
 				Log.Error(err)
 				return fmt.Errorf(err)
 			}
+
 			if int(eventType) != EVENT_FILE_ADDED {
 				continue
 			}
 			cameraFilePath := (*C.CameraFilePath)(vp)
 			defer C.free(unsafe.Pointer(cameraFilePath))
+
 			res = C.gp_camera_file_get(c.Camera, (*C.char)(&cameraFilePath.folder[0]), (*C.char)(&cameraFilePath.name[0]), FileTypeNormal, file, c.Context)
 			if res != OK {
 				err := fmt.Sprintf("error get file from camera, error code: %d", res)
@@ -68,6 +70,7 @@ func (c *Camera) CaptureExternalEvent(timeout int, bufferOut io.Writer) error {
 
 }
 
+// CapturePhoto
 func (c *Camera) CapturePhoto(buffer *bytes.Buffer) error {
 
 	type cameraFilePathInternal struct {
@@ -126,4 +129,61 @@ func (c *Camera) CapturePreview(buffer io.Writer) error {
 	}
 
 	return result
+}
+
+// CaptureCompletedEvent
+func (c *Camera) CaptureCompletedEvent(bufferOut io.Writer) error {
+
+	var timeout = 3
+
+	file, err := newFile()
+	if err != nil {
+		Log.Error(err.Error())
+		return err
+	}
+
+	var eventType C.CameraEventType
+	var vp unsafe.Pointer
+
+	defer C.free(vp)
+	defer C.gp_file_free(file)
+
+	timer1 := time.NewTimer(time.Duration(timeout) * time.Second)
+
+	for {
+		select {
+		case <-timer1.C:
+			return fmt.Errorf("timeout")
+		default:
+			res := C.gp_camera_wait_for_event(c.Camera, C.int(timeout+5), &eventType, &vp, c.Context)
+			if res != OK {
+				err := fmt.Sprintf("error wait for event, error code: %d", res)
+				Log.Error(err)
+				return fmt.Errorf(err)
+			}
+			fmt.Println(int(eventType))
+			if int(eventType) != EVENT_FILE_ADDED {
+				continue
+			}
+			cameraFilePath := (*C.CameraFilePath)(vp)
+			defer C.free(unsafe.Pointer(cameraFilePath))
+
+			res = C.gp_camera_file_get(c.Camera, (*C.char)(&cameraFilePath.folder[0]), (*C.char)(&cameraFilePath.name[0]), FileTypeNormal, file, c.Context)
+			if res != OK {
+				err := fmt.Sprintf("error get file from camera, error code: %d", res)
+				Log.Error(err)
+				return fmt.Errorf(err)
+			}
+
+			err := getFileBytes(file, bufferOut)
+			if err != nil {
+				C.gp_camera_file_delete(c.Camera, (*C.char)(&cameraFilePath.folder[0]), (*C.char)(&cameraFilePath.name[0]), c.Context)
+				Log.Error(err.Error())
+				return err
+			}
+
+			return nil
+		}
+	}
+
 }

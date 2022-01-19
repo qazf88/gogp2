@@ -140,7 +140,9 @@ func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
 		return fmt.Errorf("error widget by name '%s' read-only", _widget.Name)
 	}
 
-	if _widget.Value == wValue {
+	oldValue := _widget.Value
+
+	if oldValue == wValue {
 		Log.Info("value " + wValue + " is already relevant")
 		return nil
 	}
@@ -149,6 +151,7 @@ func (c *Camera) SetWigetValueByName(wName string, wValue string) error {
 		if choice == wValue {
 			err := c.setValue(&wName, &wValue)
 			if err != nil {
+				c.setValue(&wName, &oldValue)
 				return err
 			}
 			return nil
