@@ -161,10 +161,11 @@ func (c *Camera) CaptureCompletedEvent(bufferOut io.Writer) error {
 				Log.Error(err)
 				return fmt.Errorf(err)
 			}
-			fmt.Println(int(eventType))
+
 			if int(eventType) != EVENT_FILE_ADDED {
 				continue
 			}
+
 			cameraFilePath := (*C.CameraFilePath)(vp)
 			defer C.free(unsafe.Pointer(cameraFilePath))
 
