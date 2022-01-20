@@ -251,6 +251,7 @@ func (c *Camera) SetWigetArray(widgets []byte, missError bool, restoreOld bool) 
 			continue
 		}
 
+		flagChoice := false
 		for _, choice := range _widget.Choice {
 			if choice == newWidget[i].Value {
 				err := c.setValue(&newWidget[i].Name, &newWidget[i].Value)
@@ -266,13 +267,15 @@ func (c *Camera) SetWigetArray(widgets []byte, missError bool, restoreOld bool) 
 						}
 					}
 				}
+				flagChoice = true
 				oldWidget = append(oldWidget, _widget)
-				break
 			}
 		}
 
-		err = fmt.Errorf("widget by name '%s' cannot be set value '%s' invalid value", newWidget[i].Name, newWidget[i].Value)
-		errors = append(errors, err)
+		if !flagChoice {
+			err = fmt.Errorf("widget by name '%s' cannot be set value '%s' invalid value", newWidget[i].Name, newWidget[i].Value)
+			errors = append(errors, err)
+		}
 
 		if missError {
 			continue
