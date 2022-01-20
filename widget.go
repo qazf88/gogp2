@@ -268,11 +268,11 @@ func (c *Camera) SetWigetArray(widgets []byte, missError bool, restoreOld bool) 
 				}
 				oldWidget = append(oldWidget, _widget)
 				break
-			} else {
-				err = fmt.Errorf("could not retrieve widget by name '%s'", newWidget[i].Name)
-				errors = append(errors, err)
 			}
 		}
+
+		err = fmt.Errorf("widget by name '%s' cannot be set value '%s' invalid value", newWidget[i].Name, newWidget[i].Value)
+		errors = append(errors, err)
 
 		if missError {
 			continue
