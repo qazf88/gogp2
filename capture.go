@@ -134,8 +134,6 @@ func (c *Camera) CapturePreview(buffer io.Writer) error {
 // CaptureCompletedEvent
 func (c *Camera) CaptureCompletedEvent(bufferOut io.Writer) error {
 
-	var timeout = 3
-
 	file, err := newFile()
 	if err != nil {
 		Log.Error(err.Error())
@@ -148,14 +146,14 @@ func (c *Camera) CaptureCompletedEvent(bufferOut io.Writer) error {
 	defer C.free(vp)
 	defer C.gp_file_free(file)
 
-	timer1 := time.NewTimer(time.Duration(timeout) * time.Second)
+	timer1 := time.NewTimer(time.Duration(2) * time.Second)
 
 	for {
 		select {
 		case <-timer1.C:
 			return fmt.Errorf("timeout")
 		default:
-			res := C.gp_camera_wait_for_event(c.Camera, C.int(timeout+5), &eventType, &vp, c.Context)
+			res := C.gp_camera_wait_for_event(c.Camera, C.int(5), &eventType, &vp, c.Context)
 			if res != OK {
 				err := fmt.Sprintf("error wait for event, error code: %d", res)
 				Log.Error(err)
@@ -187,4 +185,52 @@ func (c *Camera) CaptureCompletedEvent(bufferOut io.Writer) error {
 		}
 	}
 
+}
+
+// ClearIramFile
+func (c *Camera) ClearIramFile() {
+
+	file, err := newFile()
+	if err != nil {
+		Log.Error(err.Error())
+		return
+	}
+
+	var vp unsafe.Pointer
+	var eventType C.CameraEventType
+
+	defer C.free(vp)
+	defer C.gp_file_free(file)
+
+	timer1 := time.NewTimer(time.Duration(10) * time.Second)
+
+loop:
+	for {
+		select {
+
+		case <-timer1.C:
+			break loop
+		default:
+			res := C.gp_camera_wait_for_event(c.Camera, C.int(6), &eventType, &vp, c.Context)
+			if res != OK {
+				break loop
+			}
+
+			if int(eventType) == EVENT_TIMEOUT {
+				break loop
+			}
+
+			if int(eventType) != EVENT_FILE_ADDED {
+				continue
+			}
+
+			cameraFilePath := (*C.CameraFilePath)(vp)
+			defer C.free(unsafe.Pointer(cameraFilePath))
+			res = C.gp_camera_file_delete(c.Camera, (*C.char)(&cameraFilePath.folder[0]), (*C.char)(&cameraFilePath.name[0]), c.Context)
+			if res != OK {
+				break loop
+			}
+
+		}
+	}
 }
