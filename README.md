@@ -2,3 +2,5 @@
 
 # gogp2
 Golang gPhoto2
+
+With CGO dependencies [gphoto2](https://github.com/gphoto/gphoto2)
