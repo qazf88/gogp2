@@ -10,6 +10,7 @@ import (
 	Log "github.com/qazf88/golog"
 )
 
+// NewContext
 func (c *Camera) NewContext() error {
 
 	if c.Context != nil {
@@ -30,6 +31,7 @@ func (c *Camera) NewContext() error {
 	return nil
 }
 
+// FreeContext
 func (c *Camera) FreeContext() error {
 
 	if c.Context != nil {
