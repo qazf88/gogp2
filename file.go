@@ -15,6 +15,7 @@ import (
 	Log "github.com/qazf88/golog"
 )
 
+// DownloadImage
 func (c *Camera) DownloadImage(buffer io.Writer, file *CameraFilePath, leaveOnCamera bool) error {
 
 	_file, err := newFile()
@@ -47,6 +48,7 @@ func (c *Camera) DownloadImage(buffer io.Writer, file *CameraFilePath, leaveOnCa
 	return nil
 }
 
+// newFile
 func newFile() (*C.CameraFile, error) {
 
 	var file *C.CameraFile
@@ -65,6 +67,7 @@ func newFile() (*C.CameraFile, error) {
 	return file, nil
 }
 
+// getFileBytes
 func getFileBytes(gpFileIn *C.CameraFile, bufferOut io.Writer) error {
 
 	var fileData *C.char
@@ -91,6 +94,7 @@ func getFileBytes(gpFileIn *C.CameraFile, bufferOut io.Writer) error {
 	return nil
 }
 
+// DeleteFile
 func (c *Camera) DeleteFile(path *CameraFilePath) error {
 
 	fileDir := C.CString(path.Folder)
@@ -109,6 +113,7 @@ func (c *Camera) DeleteFile(path *CameraFilePath) error {
 	return nil
 }
 
+// ListFolders
 func (c *Camera) ListFolders(folder string) ([]string, error) {
 	if folder == "" {
 		folder = "/"
@@ -135,6 +140,7 @@ func (c *Camera) ListFolders(folder string) ([]string, error) {
 	return names, nil
 }
 
+// RecursiveListFolders
 func (c *Camera) RecursiveListFolders(folder string) []string {
 	folders := make([]string, 0)
 	path := folder
@@ -151,6 +157,7 @@ func (c *Camera) RecursiveListFolders(folder string) []string {
 	return folders
 }
 
+// ListFiles
 func (c *Camera) ListFiles(folder string) ([]string, int) {
 	if folder == "" {
 		folder = "/"
@@ -180,6 +187,7 @@ func (c *Camera) ListFiles(folder string) ([]string, int) {
 	return names, int(err)
 }
 
+// cameraListToMap
 func cameraListToMap(cameraList *C.CameraList) (map[string]string, int) {
 
 	size := int(C.gp_list_count(cameraList))
